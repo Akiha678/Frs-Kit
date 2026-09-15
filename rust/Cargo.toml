@@ -1,0 +1,77 @@
+# Rust half of the frs_kit scaffold.
+#
+# This manifest plays two roles at once:
+#
+#   1. It is the *bridge crate* that flutter_rust_bridge links against
+#      (`src/lib.rs` + `src/api/**`). Its `[lib] name` decides the file name of
+#      the shared library Dart loads, so `rust_lib_frs_kit` means Dart looks for
+#      `librust_lib_frs_kit.dylib` / `.so` / `rust_lib_frs_kit.dll`.
+#   2. It is the *workspace root* for the pure-Rust crates under `crates/`.
+#
+# Layering (see ../docs/architecture.md):
+#   Dart -> src/api (the only FFI surface) -> crates/core, crates/platform
+# Nothing below `src/api` may depend on flutter_rust_bridge.
+
+[package]
+name = "rust_lib_frs_kit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+description = "Native (Rust) half of the frs_kit Flutter application."
+
+[lib]
+# cdylib    -> loaded at runtime by Dart on desktop/mobile.
+# staticlib -> linked into iOS/Android binaries when a build integration such as
+#              cargokit compiles the crate as part of the app build.
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+# Pinned to the exact codegen version: the generated glue asserts at startup that
+# the codegen and the runtime versions match, so both sides move together.
+flutter_rust_bridge = "=2.13.0"
+# `anyhow::Error` is what flutter_rust_bridge surfaces to Dart as
+# `AnyhowException`. It must resolve to the same crate instance frb uses, hence
+# the open-but-major-constrained requirement.
+anyhow = "1"
+
+rust_flutter_core = { path = "crates/core" }
+rust_flutter_platform = { path = "crates/platform" }
+
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/platform"]
+
+# This manifest is both a package and a workspace root, and in that case cargo
+# operates on the root package alone: a plain `cargo test` here would silently skip
+# the `crates/*` test suites. Listing the default members makes the plain commands
+# cover the whole workspace, which is what the `just` recipes assume.
+default-members = [".", "crates/core", "crates/platform"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+thiserror = "2"
+
+# `#[frb(...)]` expands to code guarded by `cfg(frb_expand)`, a flag only the code
+# generator sets. Without this declaration rustc 1.80+ reports an
+# "unexpected `cfg` condition name" warning for every annotated item, which buries
+# real warnings. Declaring the flag keeps the lint on for everything else.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(frb_expand)"] }
+
+# Workspace lints apply only to the crates that opt in with `[lints] workspace =
+# true` (see crates/core and crates/platform). This bridge package deliberately
+# does not opt in: `src/frb_generated.rs` is machine-written FFI glue full of
+# `unsafe`, and a `forbid` here could never be relaxed for it.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"

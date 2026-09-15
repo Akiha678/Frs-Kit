@@ -1,0 +1,22 @@
+# Only stable rustfmt options live here, so `cargo fmt` behaves identically on
+# stable and nightly. Options such as `imports_granularity` or `group_imports`
+# are nightly-only and would make stable rustfmt warn on every invocation.
+
+edition = "2024"
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+use_field_init_shorthand = true
+use_try_shorthand = true
+reorder_modules = true
+
+# Deliberately left at `false`.
+#
+# `src/frb_generated.rs` is written by the code generator, which emits
+# `use ...::{transform_result_dco, Lifetimeable, Lockable};`. With
+# `reorder_imports = true`, `cargo fmt --check` would fail on that file every time
+# right after `just gen`, and a check that is always red is a check nobody reads.
+# The generator owns its own file's formatting; hand-written imports here are kept
+# sorted by review.
+reorder_imports = false

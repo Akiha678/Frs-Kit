@@ -1,0 +1,28 @@
+# Configuration for `flutter_rust_bridge_codegen`, the tool that turns
+# `rust/src/api/**` into the Dart files under `lib/src/rust/`.
+#
+# Keys that matter are spelled out even where they match the default: a scaffold
+# should document its own behaviour rather than rely on a version's defaults.
+#
+# Full reference: https://cjycode.com/flutter_rust_bridge/manual/config
+
+# Which Rust module tree to scan. Every `pub` item reachable from here becomes
+# part of the Dart API.
+rust_input: crate::api
+
+# The crate that owns `rust_input`, relative to this file. This also decides the
+# loader path baked into the generated Dart (`rust/target/release/`), which is
+# where `cargo build --release` puts the shared library.
+rust_root: rust/
+
+# Where the generated Dart goes. This directory is machine-written: never edit it
+# by hand and never put hand-written code in it. (`lib/src/rust/bridge.dart` sits
+# next to it for exactly that reason.)
+dart_output: lib/src/rust
+
+# Name of the generated Dart entrypoint class, used as `RustLib.init()`.
+dart_entrypoint_class_name: RustLib
+
+# The generated files are checked in, so bumping flutter_rust_bridge should be a
+# deliberate commit rather than a side effect of running the generator.
+auto_upgrade_dependency: false

@@ -1,0 +1,12 @@
+# Keep clippy's idea of the supported toolchain in sync with
+# `[workspace.package] rust-version` in Cargo.toml, so lints such as
+# `manual_c_str_literals` or `uninlined_format_args` never suggest syntax that
+# the declared minimum toolchain cannot compile.
+msrv = "1.85"
+
+# FFI-facing functions legitimately take a few arguments; the bridge layer reads
+# better with explicit parameters than with a builder for every call.
+too-many-arguments-threshold = 8
+
+# The generated glue contains deeply nested types that we do not control.
+type-complexity-threshold = 250
