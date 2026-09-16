@@ -1,22 +1,22 @@
-//! Linux implementation.
+//! Linux 实现。
 //!
-//! Compiled only when `target_os = "linux"`.
+//! 仅在 `target_os = "linux"` 时编译。
 
 use std::path::PathBuf;
 
 use crate::PlatformFamily;
 
-/// See [`crate::NAME`].
+/// 见 [`crate::NAME`]。
 pub const NAME: &str = "linux";
 
-/// See [`crate::FAMILY`].
+/// 见 [`crate::FAMILY`]。
 pub const FAMILY: PlatformFamily = PlatformFamily::Desktop;
 
-/// `$XDG_DATA_HOME/<app_id>`, falling back to `~/.local/share/<app_id>`.
+/// `$XDG_DATA_HOME/<app_id>`，回退到 `~/.local/share/<app_id>`。
 ///
-/// Follows the XDG Base Directory specification. An empty `XDG_DATA_HOME` is
-/// treated as unset, as the specification requires: "If $XDG_DATA_HOME is either
-/// not set or empty, a default equal to $HOME/.local/share should be used."
+/// 遵循 XDG Base Directory 规范。按规范要求，空的 `XDG_DATA_HOME` 视为未设置：
+/// “若 $XDG_DATA_HOME 未设置或为空，则应使用等于 $HOME/.local/share 的默认
+/// 值。”
 pub fn default_data_dir(app_id: &str) -> Option<PathBuf> {
     if let Some(xdg_data_home) = non_empty_env("XDG_DATA_HOME") {
         return Some(PathBuf::from(xdg_data_home).join(app_id));
@@ -31,7 +31,7 @@ pub fn default_data_dir(app_id: &str) -> Option<PathBuf> {
     )
 }
 
-/// Returns the variable only when it is set *and* non-empty.
+/// 仅当变量已设置 *且* 非空时返回它。
 fn non_empty_env(key: &str) -> Option<std::ffi::OsString> {
     std::env::var_os(key).filter(|value| !value.is_empty())
 }
@@ -50,7 +50,7 @@ mod tests {
     #[test]
     fn data_dir_follows_the_xdg_layout() {
         let Some(dir) = default_data_dir("frs_kit") else {
-            return; // Neither XDG_DATA_HOME nor HOME is set.
+            return; // XDG_DATA_HOME 和 HOME 都没有设置。
         };
         let expected_suffix = if non_empty_env("XDG_DATA_HOME").is_some() {
             "frs_kit"

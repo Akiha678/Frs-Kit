@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// The seed colour every surface is derived from.
+/// 所有界面颜色都由它派生而来的种子色。
 ///
-/// Changing this one value re-tints the entire app, which is the cheapest way to
-/// make a scaffold look like *your* app.
-const Color kSeedColor = Color(0xFF4F46E5); // indigo
+/// 改这一个值就能给整个应用换色，这是让脚手架看起来像*你自己的*应用的最省事办法。
+const Color kSeedColor = Color(0xFF4F46E5); // 靛蓝
 
-/// Builds the app theme for [brightness].
+/// 为 [brightness] 构建应用主题。
 ///
-/// Material 3 derives the whole palette from [kSeedColor]; only the pieces a
-/// scaffold tends to override are set explicitly.
+/// Material 3 从 [kSeedColor] 派生整套配色；只显式设置脚手架通常会覆盖的那几项。
 ThemeData frsKitTheme(Brightness brightness) {
   final ColorScheme scheme = ColorScheme.fromSeed(
     seedColor: kSeedColor,
@@ -18,8 +16,8 @@ ThemeData frsKitTheme(Brightness brightness) {
 
   return ThemeData(
     colorScheme: scheme,
-    // A monospaced body would suit a demo of numbers and streams better than a
-    // proportional one for the value fields; only those opt in, below.
+    // 对数值和流的演示来说，等宽字体比比例字体更适合那些数值字段；下面只有这些
+    // 字段自己启用它。
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surfaceContainer,
       foregroundColor: scheme.onSurface,
@@ -39,10 +37,9 @@ ThemeData frsKitTheme(Brightness brightness) {
   );
 }
 
-/// Text style for values echoed back from Rust.
+/// 从 Rust 回显过来的值所用的文本样式。
 ///
-/// Values are shown in a monospaced face so that a `BigInt` or a changing
-/// counter does not reflow the layout while it updates.
+/// 值用等宽字体显示，这样 `BigInt` 或者不断变化的计数器在更新时不会让布局重新排布。
 const TextStyle kValueTextStyle = TextStyle(
   fontFamily: 'monospace',
   fontFeatures: <FontFeature>[FontFeature.tabularFigures()],

@@ -1,9 +1,9 @@
-//! Everything Dart is allowed to call.
+//! Dart 被允许调用的一切。
 //!
-//! # How this maps to Dart
+//! # 与 Dart 的对应关系
 //!
-//! `flutter_rust_bridge.yaml` points the code generator at `crate::api`, so the
-//! layout here decides the generated Dart layout, one file per module:
+//! `flutter_rust_bridge.yaml` 让 codegen 指向 `crate::api`，因此这里的布局决定
+//! 生成的 Dart 布局，一个模块一个文件：
 //!
 //! | Rust               | Dart                                |
 //! | ------------------ | ----------------------------------- |
@@ -12,22 +12,22 @@
 //! | `api::stream_demo` | `lib/src/rust/api/stream_demo.dart` |
 //! | `api::platform`    | `lib/src/rust/api/platform.dart`    |
 //!
-//! # The four round-trips
+//! # 四种往返形式
 //!
-//! * [`hello`] — values, structs and enums, plus the one `#[frb(sync)]` call.
-//! * [`async_demo`] — `Future`s, and where CPU-bound work must run.
-//! * [`stream_demo`] — `Stream`s pushed from Rust into Dart.
-//! * [`platform`] — reading host facts once, cheaply.
+//! * [`hello`] — 值、struct 与 enum，外加唯一一个 `#[frb(sync)]` 调用。
+//! * [`async_demo`] — `Future`，以及 CPU 密集型工作必须跑在哪里。
+//! * [`stream_demo`] — 由 Rust 推入 Dart 的 `Stream`。
+//! * [`platform`] — 廉价地一次性读取宿主信息。
 //!
-//! # Adding a function
+//! # 新增一个函数
 //!
-//! 1. Add a `pub fn` to one of these modules (or a new `pub mod` of your own).
-//! 2. Run `just gen`, which wraps `flutter_rust_bridge_codegen generate`.
-//! 3. Call it from `lib/src/data/`, and from there into the UI.
+//! 1. 在这些模块之一（或你自己新建的 `pub mod`）里加一个 `pub fn`。
+//! 2. 运行 `just gen`，它包装了 `flutter_rust_bridge_codegen generate`。
+//! 3. 从 `lib/src/data/` 调用它，再从那里进入 UI。
 //!
-//! Functions are asynchronous on the Dart side unless marked
-//! `#[flutter_rust_bridge::frb(sync)]`, in which case they run directly on the
-//! calling isolate and must stay cheap: no I/O, no sleeping, no waiting on locks.
+//! 除非标了 `#[flutter_rust_bridge::frb(sync)]`，函数在 Dart 侧都是异步的；标了
+//! 的话函数直接运行在当前调用的 isolate 上，必须保持廉价：不做 I/O、不 sleep、
+//! 不等待锁。
 
 pub mod async_demo;
 pub mod hello;

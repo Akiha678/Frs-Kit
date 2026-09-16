@@ -3,23 +3,21 @@ import 'package:flutter/material.dart';
 import '../app_info.dart';
 import 'theme.dart';
 
-/// Shown instead of the app when the native library could not be loaded.
+/// 原生库加载失败时用它替代应用显示。
 ///
-/// The alternative is a blank window and a stack trace in the console — which is
-/// what a missing `cargo build` looks like to anyone who did not write the
-/// scaffold. This turns that failure into the two things a reader needs: what went
-/// wrong, and the command that fixes it.
+/// 另一种做法是白窗口加上控制台里的堆栈 —— 对没写过脚手架的人来说，缺一次
+/// `cargo build` 看起来就是这样。这里把这个失败变成读者需要的两件事：出了什么问题，
+/// 以及修好它的命令。
 ///
-/// It is deliberately dependency-free: it must render even though nothing about
-/// the bridge is known to work.
+/// 它刻意不依赖任何东西：即使关于 bridge 的一切都还不可知，它也必须能渲染出来。
 class RustUnavailableApp extends StatelessWidget {
-  /// Creates the failure screen for [error].
+  /// 为 [error] 创建失败界面。
   const RustUnavailableApp({required this.error, this.stackTrace, super.key});
 
-  /// What `RustLib.init()` threw.
+  /// `RustLib.init()` 抛出的东西。
   final Object error;
 
-  /// Where it was thrown, shown collapsed below the message.
+  /// 抛出位置，折叠显示在信息下方。
   final StackTrace? stackTrace;
 
   @override

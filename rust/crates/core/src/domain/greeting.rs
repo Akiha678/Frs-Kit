@@ -1,15 +1,15 @@
-//! The one piece of "business logic" this scaffold ships, kept deliberately small.
+//! 这个脚手架附带的唯一一段「业务逻辑」，有意做得很小。
 //!
-//! It exists to show where validation belongs: the domain rejects bad input, and
-//! the bridge layer only translates. Swapping `greet` for a real use case (a
-//! search index, a parser, a solver) does not change anything else in the tree.
+//! 它的存在是为了说明校验该放在哪一层：领域层拒绝坏输入，bridge 层只做转换。
+//! 把 `greet` 换成真正的用例（搜索索引、解析器、求解器）不会改变依赖树里的其他
+//! 任何东西。
 
 use crate::error::{CoreError, CoreResult};
 
-/// Longest recipient name the domain accepts, counted in characters.
+/// 领域接受的最长收件人名字，按字符计数。
 pub const MAX_RECIPIENT_LEN: usize = 64;
 
-/// Tone used when composing a greeting.
+/// 组合问候语时使用的语气。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GreetingStyle {
     /// `Hello, Ada!`
@@ -22,13 +22,13 @@ pub enum GreetingStyle {
 }
 
 impl GreetingStyle {
-    /// Every style, in presentation order.
+    /// 所有语气，按展示顺序排列。
     ///
-    /// Handy for a Dart-side picker and for exhaustiveness in tests, without
-    /// making the enum's variant order part of the public contract.
+    /// 方便 Dart 侧做选择器，也方便测试里做穷尽检查，同时不必让 enum 的变体顺序
+    /// 成为公开契约的一部分。
     pub const ALL: [Self; 3] = [Self::Plain, Self::Enthusiastic, Self::Formal];
 
-    /// Stable, lower-case identifier suitable for logs, JSON and Dart.
+    /// 稳定的小写标识符，适合日志、JSON 和 Dart。
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -38,7 +38,7 @@ impl GreetingStyle {
         }
     }
 
-    /// Renders the greeting sentence for `recipient`.
+    /// 为 `recipient` 渲染问候语句子。
     fn render(self, recipient: &str) -> String {
         match self {
             Self::Plain => format!("Hello, {recipient}!"),
@@ -54,11 +54,10 @@ impl std::fmt::Display for GreetingStyle {
     }
 }
 
-/// A greeting that has already passed validation.
+/// 一条已经通过校验的问候语。
 ///
-/// Fields are private and exposed through getters: once constructed, a
-/// `Greeting` cannot become invalid, and the rendered message can never drift
-/// out of sync with `style`.
+/// 字段私有，通过 getter 暴露：一旦构造出来，`Greeting` 就不可能变成非法的，
+/// 渲染出的消息也永远不会和 `style` 脱节。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Greeting {
     recipient: String,
@@ -67,15 +66,14 @@ pub struct Greeting {
 }
 
 impl Greeting {
-    /// Validates `recipient` and renders `style`.
+    /// 校验 `recipient` 并渲染 `style`。
     ///
-    /// Leading and trailing whitespace is trimmed rather than rejected, so a
-    /// stray space from a text field is not an error.
+    /// 首尾空白会被 trim 而不是拒绝，这样文本框里多出的一个空格不会变成错误。
     ///
-    /// # Errors
+    /// # 错误
     ///
-    /// Returns [`CoreError::InvalidInput`] when the trimmed name is empty or
-    /// longer than [`MAX_RECIPIENT_LEN`].
+    /// trim 后的名字为空、或长于 [`MAX_RECIPIENT_LEN`] 时返回
+    /// [`CoreError::InvalidInput`]。
     pub fn new(recipient: &str, style: GreetingStyle) -> CoreResult<Self> {
         let recipient = recipient.trim();
 
@@ -96,36 +94,36 @@ impl Greeting {
         })
     }
 
-    /// The validated, trimmed recipient name.
+    /// 已校验并 trim 过的收件人名字。
     #[must_use]
     pub fn recipient(&self) -> &str {
         &self.recipient
     }
 
-    /// The rendered sentence.
+    /// 渲染出的句子。
     #[must_use]
     pub fn message(&self) -> &str {
         &self.message
     }
 
-    /// The tone this greeting was rendered in.
+    /// 这条问候语所用的语气。
     #[must_use]
     pub fn style(&self) -> GreetingStyle {
         self.style
     }
 
-    /// Consumes the greeting, yielding the rendered sentence.
+    /// 消费这条问候语，产出渲染好的句子。
     #[must_use]
     pub fn into_message(self) -> String {
         self.message
     }
 }
 
-/// Convenience wrapper around [`Greeting::new`], mirroring the bridge API name.
+/// [`Greeting::new`] 的便捷包装，名字与 bridge API 对齐。
 ///
-/// # Errors
+/// # 错误
 ///
-/// See [`Greeting::new`].
+/// 见 [`Greeting::new`]。
 pub fn greet(recipient: &str, style: GreetingStyle) -> CoreResult<Greeting> {
     Greeting::new(recipient, style)
 }
@@ -186,7 +184,7 @@ mod tests {
 
     #[test]
     fn length_is_counted_in_characters_not_bytes() {
-        // 64 multi-byte characters are fine even though they are 128 bytes.
+        // 64 个多字节字符没问题，尽管它们占 128 字节。
         let name = "é".repeat(MAX_RECIPIENT_LEN);
         assert!(Greeting::new(&name, GreetingStyle::Plain).is_ok());
     }

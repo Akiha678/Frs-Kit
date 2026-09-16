@@ -1,7 +1,7 @@
-//! Domain types and rules.
+//! 领域类型与规则。
 //!
-//! Modules in here are private and re-exported by name, so the public surface of
-//! the crate is explicit and refactoring the file layout never breaks callers.
+//! 这里的模块都是私有的，按名字重新导出，因此 crate 的公开表面是显式的，重构
+//! 文件布局永远不会破坏调用方。
 
 mod greeting;
 

@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// Shared chrome for every demo on the home page.
-///
-/// Each panel explains one round-trip between Dart and Rust, so they all need the
-/// same title/explanation/body layout. Having one shell keeps the panels short
-/// enough to read in one screen, which is the point of a scaffold.
 class DemoCard extends StatelessWidget {
-  /// Creates a panel.
+  /// 创建一个面板。
   const DemoCard({
     required this.title,
     required this.explanation,
@@ -17,17 +12,14 @@ class DemoCard extends StatelessWidget {
     super.key,
   });
 
-  /// Panel heading, usually naming the Rust function it demonstrates.
   final String title;
 
-  /// One or two sentences about what the Rust side is doing, shown under the
-  /// title.
   final String explanation;
 
-  /// Optional widget aligned to the right of the title, typically a status chip.
+  /// 可选 widget，对齐到标题右侧，通常是一个状态 chip。
   final Widget? trailing;
 
-  /// Panel body.
+  /// 面板主体。
   final Widget child;
 
   @override
@@ -73,12 +65,11 @@ class DemoCard extends StatelessWidget {
   }
 }
 
-/// A monospaced line showing a value that came back from Rust.
+/// 用来显示从 Rust 返回的值的等宽文本行。
 ///
-/// [label] is fixed-width-ish and dimmed, so a changing value does not shift the
-/// layout while it updates.
+/// [label] 大致定宽并被弱化，这样值在变化时不会推动布局。
 class ValueLine extends StatelessWidget {
-  /// Creates a value line.
+  /// 创建一条值行。
   const ValueLine({
     required this.label,
     required this.value,
@@ -86,13 +77,13 @@ class ValueLine extends StatelessWidget {
     super.key,
   });
 
-  /// Short label, e.g. `sync`.
+  /// 短标签，例如 `sync`。
   final String label;
 
-  /// The value itself.
+  /// 值本身。
   final String value;
 
-  /// Extra style for the value, e.g. to show an error in the error colour.
+  /// 值的附加样式，例如用错误色显示一个错误。
   final TextStyle? style;
 
   @override

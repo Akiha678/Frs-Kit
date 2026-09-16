@@ -1,4 +1,4 @@
-# Miscellaneous
+# 杂项
 *.class
 *.log
 *.pyc
@@ -12,18 +12,17 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IntelliJ 相关
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# .vscode 文件夹里包含你在 VS Code 中配置的启动配置和任务，
+# 你可能希望把它们纳入版本控制，所以这一行默认被注释掉。
 #.vscode/
 
-# Flutter/Dart/Pub related
+# Flutter/Dart/Pub 相关
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
@@ -33,81 +32,81 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Symbolication related
+# 符号化相关
 app.*.symbols
 
-# Obfuscation related
+# 混淆相关
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android Studio 会把构建产物放在这里
 /android/app/debug
 /android/app/profile
 /android/app/release
 
-# Widget Preview related
+# Widget 预览相关
 .widget_preview/
 
 # ---------------------------------------------------------------- Rust ----
 
-# Build output, including the shared library the app loads at runtime. Never
-# commit it: `just build` regenerates it, and a stale binary is the single most
-# confusing failure this project has (see docs/troubleshooting.md).
+# 构建产物，包括应用在运行时加载的共享库。绝不要提交它：`just build`
+# 会重新生成它，而过期的二进制文件是这个项目里最令人困惑的失败
+# （见 docs/troubleshooting.md）。
 #
-# It is also large: `cargo build --release` alone leaves ~600 MB here, and cargokit
-# adds a per-architecture target for every mobile build.
+# 它还很大：仅仅 `cargo build --release` 就会在这里留下约 600 MB，
+# 而 cargokit 会为每次移动端构建增加一个按架构区分的 target。
 /rust/target/
 
-# The lockfile is committed on purpose: this crate produces an application, not a
-# library, so the exact dependency graph is part of the build. The negation below is
-# a no-op with the rules in this file — nothing here ignores it — but it is what the
-# upstream flutter_rust_bridge template adds, and it keeps a future `*.lock` rule, or
-# a contributor's global gitignore, from silently dropping it.
+# 这个锁文件是刻意提交的：这个 crate 产出的是应用而不是库，
+# 所以精确的依赖图是构建的一部分。在本文件的规则下，下面那条否定规则
+# 其实不起作用——这里没有任何规则会忽略它——但它正是上游
+# flutter_rust_bridge 模板所加的内容，而且它能防止将来某条 `*.lock` 规则，
+# 或某位贡献者的全局 gitignore，悄悄把它丢掉。
 !Cargo.lock
 
-# ----------------------------------------------- secrets and signing -----
+# ----------------------------------------------- 密钥与签名 ---------------
 
-# `android/.gitignore` already covers `android/key.properties`, `**/*.keystore` and
-# `**/*.jks`, which is where Flutter tells you to put them. These rules cover the
-# same file types anywhere else in the tree, because a keystore dropped in the
-# project root would otherwise be committed with the release signing keys.
+# `android/.gitignore` 已经覆盖了 `android/key.properties`、`**/*.keystore` 和
+# `**/*.jks`，也就是 Flutter 让你放置它们的位置。这些规则覆盖的是
+# 目录树里其他任何地方的同类型文件，因为放在项目根目录的 keystore
+# 否则就会连同发布签名密钥一起被提交。
 *.jks
 *.keystore
 
-# ---------------------------------------------------------- web build -----
+# ---------------------------------------------------------- web 构建 ------
 
-# Output of `flutter_rust_bridge_codegen build-web`, which the generator writes to
-# `web/pkg/` (the loader's `webPrefix`) plus a compiled `web/main.dart.js`. Nothing
-# in this checkout runs that step yet — see docs/troubleshooting.md — so these paths
-# only appear once the web target is wired up. They are generated either way.
+# `flutter_rust_bridge_codegen build-web` 的输出，生成器把它写到
+# `web/pkg/`（加载器的 `webPrefix`），再加上编译后的 `web/main.dart.js`。
+# 这个检出里还没有任何东西运行那一步——见 docs/troubleshooting.md——
+# 所以这些路径只有在 web 目标接好之后才会出现。无论如何它们都是生成的。
 /web/pkg/
 /web/main.dart.js
 
-# ------------------------------------------------- FVM (optional) ---------
+# ------------------------------------------------- FVM (可选) -------------
 
-# A local Flutter SDK install, managed by `fvm`. The `.fvmrc` pin next to it IS
-# committed, so everyone gets the same Flutter version.
+# 由 `fvm` 管理的本地 Flutter SDK 安装。它旁边的 `.fvmrc` 版本锁定
+# 是会被提交的，这样每个人用的都是同一个 Flutter 版本。
 .fvm/
 
-# -------------------------------------- what is committed on purpose ------
+# -------------------------------------- 刻意提交的内容 --------------------
 
-# Several things here would normally be ignored in another kind of project. They are
-# listed so that a future contributor does not "fix" them by adding a rule:
+# 这里有几样东西在别的项目里通常会被忽略。把它们列出来，
+# 是为了让后来的贡献者不会通过添加规则来“修好”它们：
 #
-#   1. Generated bridge code — `rust/src/frb_generated.rs`,
-#      `lib/src/rust/frb_generated*.dart` and `lib/src/rust/api/*.dart`. Produced by
-#      `just gen` and checked in so a change to the Dart/Rust boundary shows up in
-#      review, and so a fresh checkout compiles before anyone has installed the code
-#      generator. Regenerate them; never edit them by hand.
+#   1. 生成的 bridge 代码 —— `rust/src/frb_generated.rs`、
+#      `lib/src/rust/frb_generated*.dart` 和 `lib/src/rust/api/*.dart`。由
+#      `just gen` 产出并提交，这样 Dart/Rust 边界上的改动就会出现在评审里，
+#      而且全新检出在任何人安装 codegen 之前就能编译。请重新生成它们；
+#      绝不要手工编辑。
 #
-#   2. Lockfiles — `pubspec.lock`, `rust/Cargo.lock`, `ios/Podfile.lock` and
-#      `macos/Podfile.lock`. This is an application, so pinning the exact dependency
-#      graph is the point. (`rust_builder/.gitignore` ignores the plugin's own
-#      `pubspec.lock` and `.dart_tool/`, which is correct for a package.)
+#   2. 锁文件 —— `pubspec.lock`、`rust/Cargo.lock`、`ios/Podfile.lock` 和
+#      `macos/Podfile.lock`。这是一个应用，所以锁定精确的依赖图正是重点。
+#      （`rust_builder/.gitignore` 忽略了插件自身的 `pubspec.lock` 和
+#      `.dart_tool/`，对一个依赖包来说这是正确的。）
 #
-#   3. `.metadata` — read by `flutter` to migrate this project between Flutter
-#      versions.
+#   3. `.metadata` —— 由 `flutter` 读取，用来在 Flutter 版本之间迁移
+#      本项目。
 #
-# Everything else that is ignored here was verified with `git check-ignore`: the
-# platform shells carry their own `.gitignore` files for `Pods/`, `Flutter/ephemeral/`
-# and `Generated.xcconfig`, and `android/.gitignore` covers the Gradle wrapper and
-# signing config.
+# 这里被忽略的其他所有内容都用 `git check-ignore` 实测过：平台外壳各自
+# 带着自己的 `.gitignore`，覆盖 `Pods/`、`Flutter/ephemeral/` 和
+# `Generated.xcconfig`，而 `android/.gitignore` 覆盖了 Gradle wrapper
+# 和签名配置。

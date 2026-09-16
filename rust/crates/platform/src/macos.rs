@@ -1,24 +1,23 @@
-//! macOS implementation.
+//! macOS 实现。
 //!
-//! Compiled only when `target_os = "macos"`.
+//! 仅在 `target_os = "macos"` 时编译。
 
 use std::path::PathBuf;
 
 use crate::PlatformFamily;
 
-/// See [`crate::NAME`].
+/// 见 [`crate::NAME`]。
 pub const NAME: &str = "macos";
 
-/// See [`crate::FAMILY`].
+/// 见 [`crate::FAMILY`]。
 pub const FAMILY: PlatformFamily = PlatformFamily::Desktop;
 
-/// `~/Library/Application Support/<app_id>`.
+/// `~/Library/Application Support/<app_id>`。
 ///
-/// This is the location Apple documents for application support data, and it is
-/// what `path_provider`'s `getApplicationSupportDirectory` returns under the
-/// hood. Note that a sandboxed App Store build gets a container-relative path
-/// instead, which is why the Dart side should still prefer `path_provider` when
-/// the app ships to the App Store.
+/// 这是 Apple 为应用支持数据指定的位置，也是 `path_provider` 的
+/// `getApplicationSupportDirectory` 底层返回的内容。注意沙盒化的 App Store
+/// 构建拿到的是容器内的相对路径，所以应用要上架 App Store 时，Dart 侧仍应优先
+/// 使用 `path_provider`。
 pub fn default_data_dir(app_id: &str) -> Option<PathBuf> {
     let home = std::env::var_os("HOME")?;
     Some(
@@ -43,7 +42,7 @@ mod tests {
     #[test]
     fn data_dir_lives_under_application_support() {
         let Some(dir) = default_data_dir("frs_kit") else {
-            return; // No HOME in this environment.
+            return; // 这个环境里没有 HOME。
         };
         assert!(dir.ends_with("Library/Application Support/frs_kit"));
     }

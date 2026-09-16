@@ -1,16 +1,16 @@
-# Rust half of the frs_kit scaffold.
+# frs_kit 脚手架的 Rust 侧。
 #
-# This manifest plays two roles at once:
+# 这个 manifest 同时扮演两个角色：
 #
-#   1. It is the *bridge crate* that flutter_rust_bridge links against
-#      (`src/lib.rs` + `src/api/**`). Its `[lib] name` decides the file name of
-#      the shared library Dart loads, so `rust_lib_frs_kit` means Dart looks for
-#      `librust_lib_frs_kit.dylib` / `.so` / `rust_lib_frs_kit.dll`.
-#   2. It is the *workspace root* for the pure-Rust crates under `crates/`.
+#   1. 它是 flutter_rust_bridge 链接的 *bridge crate*
+#      （`src/lib.rs` + `src/api/**`）。它的 `[lib] name` 决定 Dart 加载的
+#      动态库文件名，因此 `rust_lib_frs_kit` 意味着 Dart 会去找
+#      `librust_lib_frs_kit.dylib` / `.so` / `rust_lib_frs_kit.dll`。
+#   2. 它是 `crates/` 下那些纯 Rust crate 的 *workspace root*。
 #
-# Layering (see ../docs/architecture.md):
-#   Dart -> src/api (the only FFI surface) -> crates/core, crates/platform
-# Nothing below `src/api` may depend on flutter_rust_bridge.
+# 分层（见 ../docs/architecture.md）：
+#   Dart -> src/api（唯一的 FFI 边界） -> crates/core, crates/platform
+# `src/api` 以下的任何代码都不得依赖 flutter_rust_bridge。
 
 [package]
 name = "rust_lib_frs_kit"
@@ -21,18 +21,18 @@ publish = false
 description = "Native (Rust) half of the frs_kit Flutter application."
 
 [lib]
-# cdylib    -> loaded at runtime by Dart on desktop/mobile.
-# staticlib -> linked into iOS/Android binaries when a build integration such as
-#              cargokit compiles the crate as part of the app build.
+# cdylib    -> 在桌面/移动端由 Dart 在运行时加载。
+# staticlib -> 当 cargokit 这类构建集成把 crate 作为应用构建的一部分编译时，
+#              链接进 iOS/Android 的二进制。
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-# Pinned to the exact codegen version: the generated glue asserts at startup that
-# the codegen and the runtime versions match, so both sides move together.
+# 锁定到与 codegen 完全一致的版本：生成的胶水代码会在启动时断言 codegen 与
+# runtime 的版本匹配，所以两边必须一起升级。
 flutter_rust_bridge = "=2.13.0"
-# `anyhow::Error` is what flutter_rust_bridge surfaces to Dart as
-# `AnyhowException`. It must resolve to the same crate instance frb uses, hence
-# the open-but-major-constrained requirement.
+# `anyhow::Error` 就是 flutter_rust_bridge 交给 Dart 的
+# `AnyhowException`。它必须解析到 frb 所用的同一个 crate 实例，因此这里用
+# 开放但限定大版本的要求。
 anyhow = "1"
 
 rust_flutter_core = { path = "crates/core" }
@@ -42,10 +42,10 @@ rust_flutter_platform = { path = "crates/platform" }
 resolver = "2"
 members = ["crates/core", "crates/platform"]
 
-# This manifest is both a package and a workspace root, and in that case cargo
-# operates on the root package alone: a plain `cargo test` here would silently skip
-# the `crates/*` test suites. Listing the default members makes the plain commands
-# cover the whole workspace, which is what the `just` recipes assume.
+# 这个 manifest 既是 package 又是 workspace root，这种情况下 cargo 只对 root
+# package 生效：在这里直接跑 `cargo test` 会静默跳过 `crates/*` 的测试套件。
+# 列出 default members 能让简单命令覆盖整个 workspace，这也是 `just` 配方所
+# 假设的行为。
 default-members = [".", "crates/core", "crates/platform"]
 
 [workspace.package]
@@ -58,17 +58,17 @@ publish = false
 [workspace.dependencies]
 thiserror = "2"
 
-# `#[frb(...)]` expands to code guarded by `cfg(frb_expand)`, a flag only the code
-# generator sets. Without this declaration rustc 1.80+ reports an
-# "unexpected `cfg` condition name" warning for every annotated item, which buries
-# real warnings. Declaring the flag keeps the lint on for everything else.
+# `#[frb(...)]` 会展开成由 `cfg(frb_expand)` 保护的代码，而这个 flag 只有
+# codegen 会设置。不声明它的话，rustc 1.80+ 会对每个带注解的条目报
+# "unexpected `cfg` condition name" 警告，把真正的警告淹掉。声明这个 flag
+# 可以让 lint 对其余代码继续生效。
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(frb_expand)"] }
 
-# Workspace lints apply only to the crates that opt in with `[lints] workspace =
-# true` (see crates/core and crates/platform). This bridge package deliberately
-# does not opt in: `src/frb_generated.rs` is machine-written FFI glue full of
-# `unsafe`, and a `forbid` here could never be relaxed for it.
+# Workspace lint 只对用 `[lints] workspace = true` 选择加入的 crate 生效（见
+# crates/core 与 crates/platform）。这个 bridge package 有意不加入：
+# `src/frb_generated.rs` 是机器生成的 FFI 胶水代码，到处是 `unsafe`，在这里
+# `forbid` 之后就永远无法为它放宽。
 [workspace.lints.rust]
 unsafe_code = "forbid"
 

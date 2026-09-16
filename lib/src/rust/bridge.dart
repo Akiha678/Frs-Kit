@@ -1,15 +1,14 @@
-/// Hand-written companion to the generated bindings.
+/// 生成绑定的手写配套文件。
 ///
-/// Every other file in `lib/src/rust/` is machine-written by
-/// `flutter_rust_bridge_codegen generate` (run `just gen`) and must never be
-/// edited: the next run overwrites it without warning.
+/// `lib/src/rust/` 下的其他文件全部由
+/// `flutter_rust_bridge_codegen generate`（即 `just gen`）机器生成，绝不要
+/// 编辑：下一次生成会无声地覆盖它们。
 ///
-/// This file exists for two reasons:
+/// 这个文件存在的理由有两条：
 ///
-/// * the rest of the app imports one stable path, `package:frs_kit/src/rust/
-///   bridge.dart`, instead of reaching into the generated tree — regenerating
-///   never forces a rename anywhere else;
-/// * "is the native library loaded yet?" is answered in exactly one place.
+/// * 应用其余部分只导入一个稳定路径 `package:frs_kit/src/rust/
+///   bridge.dart`，不必伸手进生成目录 —— 重新生成永远不会逼着别处改名；
+/// * “原生库加载好了吗？”这个问题只在一个地方回答。
 library;
 
 import 'frb_generated.dart';
@@ -20,10 +19,10 @@ export 'api/platform.dart';
 export 'api/stream_demo.dart';
 export 'frb_generated.dart' show RustLib;
 
-/// Loads the native library and runs the Rust initializers.
+/// 加载原生库并运行 Rust 初始化代码。
 ///
-/// Call this exactly once, after `WidgetsFlutterBinding.ensureInitialized()`
-/// because loading is asynchronous from Dart's point of view:
+/// 只调用一次，且要在 `WidgetsFlutterBinding.ensureInitialized()` 之后，因为从
+/// Dart 的角度看加载是异步的：
 ///
 /// ```dart
 /// WidgetsFlutterBinding.ensureInitialized();
@@ -31,12 +30,10 @@ export 'frb_generated.dart' show RustLib;
 /// runApp(const FrsKitApp());
 /// ```
 ///
-/// The library is looked up in `rust/target/release/` — that path is baked into
-/// the generated `kDefaultExternalLibraryLoaderConfig` — so a debug-only
-/// `cargo build` is not enough. Use `just build`, which builds the release
-/// profile that the loader expects.
+/// 库从 `rust/target/release/` 查找 —— 这个路径写死在生成的
+/// `kDefaultExternalLibraryLoaderConfig` 里 —— 所以只跑 debug 的 `cargo build`
+/// 不够，要用 `just build`，它构建的正是加载器所期望的 release profile。
 ///
-/// Throws when the library is missing, was built from different sources, or has
-/// a codegen/runtime version mismatch. `main` catches that and shows the reason
-/// instead of a blank window.
+/// 库缺失、由不同源码构建、或 codegen/runtime 版本不匹配时都会抛出。`main` 捕获
+/// 它并显示原因，而不是留下一片空白窗口。
 Future<void> initRustBridge() => RustLib.init();

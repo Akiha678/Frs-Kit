@@ -1,10 +1,10 @@
 name: frs_kit
 description: "Flutter + Rust application scaffold, bridged with flutter_rust_bridge."
-# Private application: never publish this to pub.dev.
+# 私有应用：绝不要把它发布到 pub.dev。
 publish_to: 'none'
 
-# The native library is built separately (`just build`), so the Dart package
-# version here only tracks the Flutter layer.
+# 原生库是单独构建的（`just build`），所以这里的 Dart 依赖包版本
+# 只跟踪 Flutter 层。
 version: 1.0.0+1
 
 environment:
@@ -16,13 +16,18 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
-  # The Dart half of the bridge: the dynamic-library loader, the support
-  # libraries the generated code imports, and `AnyhowException`.
+  # 状态管理、依赖注入，以及——等应用长出第二条路由之后——导航。
+  # `Get.put`/`Get.find` 取代了脚手架过去携带的 InheritedNotifier 作用域，
+  # 而 `Obx` 只重建那些读了某个 `Rx` 的 widget。
+  get: ^4.7.3
+
+  # bridge 的 Dart 那一半：动态库加载器、生成代码所 import 的支持库，
+  # 以及 `AnyhowException`。
   #
-  # Pinned exactly rather than `^2.13.0`. The generated glue asserts at startup
-  # that the codegen version equals the runtime version, so a stray minor upgrade
-  # would become a runtime failure. Move this pin, `flutter_rust_bridge` in
-  # `rust/Cargo.toml`, and the `flutter_rust_bridge_codegen` binary together.
+  # 精确锁定版本，而不是用 `^2.13.0`。生成的胶水代码会在启动时断言 codegen
+  # 版本等于运行时版本，所以一次随意的小版本升级就会变成运行时失败。
+  # 请把这个锁定版本、`rust/Cargo.toml` 里的 `flutter_rust_bridge`，
+  # 以及 `flutter_rust_bridge_codegen` 二进制一起调整。
   flutter_rust_bridge: 2.13.0
   rust_lib_frs_kit:
     path: rust_builder
@@ -31,9 +36,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # Drives the app on a real device, a desktop target or Chrome, so
-  # `integration_test/` can exercise the Rust library end to end. The pure-Dart
-  # `flutter test` cannot do that on its own.
+  # 在真机、桌面目标或 Chrome 上驱动应用，这样 `integration_test/`
+  # 就能端到端地跑通 Rust 库。纯 Dart 的 `flutter test` 自己做不到
+  # 这一点。
   integration_test:
     sdk: flutter
 
@@ -42,8 +47,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets and fonts go here. Nothing is declared yet, which keeps `pub get`
-  # fast; remember that a missing entry fails at runtime, not at build time.
+  # 资源与字体写在这里。目前什么都没声明，这让 `pub get` 保持很快；
+  # 记住：漏写条目会在运行时失败，而不是在构建时。
   # assets:
   #   - assets/images/
   # fonts:

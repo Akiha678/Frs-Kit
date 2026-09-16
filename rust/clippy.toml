@@ -1,12 +1,12 @@
-# Keep clippy's idea of the supported toolchain in sync with
-# `[workspace.package] rust-version` in Cargo.toml, so lints such as
-# `manual_c_str_literals` or `uninlined_format_args` never suggest syntax that
-# the declared minimum toolchain cannot compile.
+# 让 clippy 对受支持工具链的认知与 Cargo.toml 里的
+# `[workspace.package] rust-version` 保持一致，这样 `manual_c_str_literals`、
+# `uninlined_format_args` 之类的 lint 就不会建议声明的最低工具链根本编译不了
+# 的语法。
 msrv = "1.85"
 
-# FFI-facing functions legitimately take a few arguments; the bridge layer reads
-# better with explicit parameters than with a builder for every call.
+# 面向 FFI 的函数本来就需要若干参数；bridge 层用显式参数比每次调用都套一层
+# builder 更好读。
 too-many-arguments-threshold = 8
 
-# The generated glue contains deeply nested types that we do not control.
+# 生成的胶水代码里有我们不掌控的深层嵌套类型。
 type-complexity-threshold = 250

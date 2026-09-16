@@ -1,6 +1,6 @@
-# Only stable rustfmt options live here, so `cargo fmt` behaves identically on
-# stable and nightly. Options such as `imports_granularity` or `group_imports`
-# are nightly-only and would make stable rustfmt warn on every invocation.
+# 这里只放 stable rustfmt 支持的选项，这样 `cargo fmt` 在 stable 和 nightly
+# 上行为一致。`imports_granularity`、`group_imports` 这类选项是 nightly 专属
+# 的，放进来会让 stable rustfmt 每次调用都告警。
 
 edition = "2024"
 max_width = 100
@@ -11,12 +11,11 @@ use_field_init_shorthand = true
 use_try_shorthand = true
 reorder_modules = true
 
-# Deliberately left at `false`.
+# 有意保持 `false`。
 #
-# `src/frb_generated.rs` is written by the code generator, which emits
-# `use ...::{transform_result_dco, Lifetimeable, Lockable};`. With
-# `reorder_imports = true`, `cargo fmt --check` would fail on that file every time
-# right after `just gen`, and a check that is always red is a check nobody reads.
-# The generator owns its own file's formatting; hand-written imports here are kept
-# sorted by review.
+# `src/frb_generated.rs` 由 codegen 写出，它会生成
+# `use ...::{transform_result_dco, Lifetimeable, Lockable};`。若设成
+# `reorder_imports = true`，紧接 `just gen` 之后 `cargo fmt --check` 每次都会
+# 因该文件失败，而一个永远红的检查就是没人会看的检查。生成器自己负责它那个
+# 文件的格式；这里手写的 import 靠 review 保持有序。
 reorder_imports = false

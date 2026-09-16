@@ -4,19 +4,17 @@ import 'src/app.dart';
 import 'src/rust/bridge.dart';
 import 'src/ui/rust_unavailable_app.dart';
 
-/// Starts the app.
+/// 启动应用。
 ///
-/// Two steps, in this order:
+/// 两步，顺序不能颠倒：
 ///
-/// 1. `ensureInitialized()` — required before any plugin or FFI call, because Dart
-///    may run this function before the engine is ready.
-/// 2. `initRustBridge()` — loads the native library and runs the Rust
-///    initializers. Every call into `lib/src/rust/` needs this to have finished,
-///    including the synchronous ones.
+/// 1. `ensureInitialized()` —— 任何插件或 FFI 调用之前都必须执行，因为 Dart
+///    可能在引擎就绪之前就跑到这个函数。
+/// 2. `initRustBridge()` —— 加载原生库并运行 Rust 初始化代码。对
+///    `lib/src/rust/` 的每次调用（包括同步调用）都要求这一步已经完成。
 ///
-/// A failure in step 2 is expected on a fresh checkout, where nobody has run
-/// `just build` yet, so it is reported on screen instead of ending in a white
-/// window.
+/// 第 2 步失败在全新检出的仓库里是预期内的 —— 此时还没人跑过 `just build` ——
+/// 所以把原因显示在界面上，而不是留下一片白窗口。
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

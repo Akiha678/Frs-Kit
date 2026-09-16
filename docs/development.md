@@ -80,8 +80,9 @@ String shout(String name) {
 ```
 
 **4. Expose it to the UI**: add a getter to `HomeState` next to `instantHello` —
-`String get instantShout => greetings.shout(_name);` — then render it from a widget such as
-`ValueLine(label: 'shout', value: …)`.
+`String get instantShout => greetings.shout(name.value);` — then read it from a widget
+inside an `Obx`, e.g. `ValueLine(label: 'shout', value: state.instantShout)`. The `Obx` is
+what subscribes that widget to whichever `Rx` the getter reads.
 
 **5. Check it**: `just check`, `just rust-test`, `just test`, then `just run`. Two rules
 hold throughout: never edit `lib/src/rust/**` by hand, and never add
@@ -118,10 +119,17 @@ after crossing FFI. `just test-all` runs `check`, `rust-test`, `test` and `test-
 Unit tests for the state go in `test/src/state/home_state_test.dart`:
 
 ```dart
-final HomeState state = buildState();      // HomeState built on the fakes
-state.setName('Ada');
-expect(state.instantHello, 'Hello, Ada!'); // the fake's helloPrefix is 'Hello'
+final HomeState state = buildState();       // HomeState built on the fakes
+addTearDown(() => disposeState(state));     // GetxController has no `dispose()`
+state.name.value = 'Ada';
+expect(state.instantHello, 'Hello, Ada!');  // the fake's helloPrefix is 'Hello'
 ```
+
+These tests build the controller directly, with no Get container and no Flutter binding,
+which is why they pass the fakes to the constructor and call `onDelete()` themselves
+(`disposeState` wraps it). Tests that go through the app instead register everything via
+`HomeBinding` and must call `Get.reset()` in `tearDown`, because the Get container is
+global and would otherwise hand the next test the previous test's controller.
 
 Widget tests go in `test/app_test.dart` and pump
 `FrsKitApp(greetings: greetings, platform: const FakePlatformRepository())`; its

@@ -1,28 +1,28 @@
-# Configuration for `flutter_rust_bridge_codegen`, the tool that turns
-# `rust/src/api/**` into the Dart files under `lib/src/rust/`.
+# `flutter_rust_bridge_codegen` 的配置，这个工具把 `rust/src/api/**`
+# 变成 `lib/src/rust/` 下的 Dart 文件。
 #
-# Keys that matter are spelled out even where they match the default: a scaffold
-# should document its own behaviour rather than rely on a version's defaults.
+# 重要的键即使与默认值相同也照样写明：脚手架应该记录自己的行为，
+# 而不是依赖某个版本的默认值。
 #
-# Full reference: https://cjycode.com/flutter_rust_bridge/manual/config
+# 完整参考：https://cjycode.com/flutter_rust_bridge/manual/config
 
-# Which Rust module tree to scan. Every `pub` item reachable from here becomes
-# part of the Dart API.
+# 要扫描哪棵 Rust 模块树。从这里可达的每一个 `pub` 项都会成为
+# Dart API 的一部分。
 rust_input: crate::api
 
-# The crate that owns `rust_input`, relative to this file. This also decides the
-# loader path baked into the generated Dart (`rust/target/release/`), which is
-# where `cargo build --release` puts the shared library.
+# 拥有 `rust_input` 的 crate，相对于本文件。它还决定了写进生成 Dart 里的
+# 加载路径（`rust/target/release/`），也就是 `cargo build --release`
+# 放置共享库的位置。
 rust_root: rust/
 
-# Where the generated Dart goes. This directory is machine-written: never edit it
-# by hand and never put hand-written code in it. (`lib/src/rust/bridge.dart` sits
-# next to it for exactly that reason.)
+# 生成的 Dart 放在哪里。这个目录是机器写的：绝不要手工编辑它，
+# 也绝不要把代码手写进去。（`lib/src/rust/bridge.dart` 就放在它旁边，
+# 正是出于这个原因。）
 dart_output: lib/src/rust
 
-# Name of the generated Dart entrypoint class, used as `RustLib.init()`.
+# 生成的 Dart 入口类名，以 `RustLib.init()` 的形式使用。
 dart_entrypoint_class_name: RustLib
 
-# The generated files are checked in, so bumping flutter_rust_bridge should be a
-# deliberate commit rather than a side effect of running the generator.
+# 生成的文件会被提交，所以升级 flutter_rust_bridge 应该是一次刻意的
+# 提交，而不是运行生成器带来的副作用。
 auto_upgrade_dependency: false

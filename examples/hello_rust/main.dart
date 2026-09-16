@@ -1,16 +1,15 @@
-/// The smallest complete example: one synchronous call and one asynchronous call.
+/// 最小的完整示例：一次同步调用，一次异步调用。
 ///
-/// Run it with:
+/// 这样运行：
 ///
 /// ```sh
 /// flutter run -t examples/hello_rust/main.dart -d macos
 /// ```
 ///
-/// It reaches `rust/src/api/hello.rs` through the same data layer the app uses
-/// (`lib/src/data/greeting_repository.dart`), so the only thing this file adds is a
-/// UI. Compare the two lines at the bottom of the screen: the first is recomputed
-/// on every keystroke because `hello` is `#[frb(sync)]`, the second only changes
-/// when the button is pressed because `greet` returns a `Future`.
+/// 它经由应用用的那层数据层（`lib/src/data/greeting_repository.dart`）够到
+/// `rust/src/api/hello.rs`，所以这个文件唯一多出来的东西就是一个 UI。对比屏幕
+/// 底下那两行：第一行每敲一个键就重算，因为 `hello` 是 `#[frb(sync)]`；第二行
+/// 只在按钮被按下时才变，因为 `greet` 返回 `Future`。
 library;
 
 import 'package:flutter/material.dart';
@@ -19,16 +18,16 @@ import 'package:frs_kit/src/data/greeting_repository.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
 import 'package:frs_kit/src/ui/theme.dart';
 
-/// Loads the native library before the first frame.
+/// 在第一帧之前加载原生库。
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initRustBridge();
   runApp(const HelloRustExample());
 }
 
-/// A one-screen example app.
+/// 单屏的示例应用。
 class HelloRustExample extends StatefulWidget {
-  /// Creates the example.
+  /// 创建这个示例。
   const HelloRustExample({super.key});
 
   @override
@@ -63,8 +62,8 @@ class _HelloRustExampleState extends State<HelloRustExample> {
       );
       setState(() => _greeting = greeting);
     } on BridgeFailure catch (failure) {
-      // Expected for a blank or over-long name: the domain layer in Rust rejects
-      // it, and the message travels back unchanged.
+      // 名字为空或过长时属于预期情况：Rust 里的 domain 层会拒绝它，
+      // 而消息会原样传回来。
       setState(() {
         _greeting = null;
         _error = failure.message;
@@ -92,7 +91,7 @@ class _HelloRustExampleState extends State<HelloRustExample> {
                 TextField(
                   controller: _name,
                   decoration: const InputDecoration(labelText: 'Name'),
-                  // Rebuilds the synchronous line as you type.
+                  // 输入时重建同步那一行。
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 12),
@@ -109,7 +108,7 @@ class _HelloRustExampleState extends State<HelloRustExample> {
                 ),
                 const SizedBox(height: 24),
                 Text('sync', style: theme.textTheme.labelMedium),
-                // No Future, no await: the value is already there.
+                // 没有 Future，也不用 await：值已经在这儿了。
                 SelectableText(_greetings.hello(_name.text), style: kValueTextStyle),
                 const SizedBox(height: 16),
                 Text('async', style: theme.textTheme.labelMedium),

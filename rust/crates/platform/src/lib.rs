@@ -1,8 +1,8 @@
-//! Platform differences, isolated behind one small module per operating system.
+//! 平台差异，按操作系统隔离在每个小模块里。
 //!
-//! Exactly one of the modules below is compiled, and it is aliased to `imp`
-//! (short for "implementation"), so this file can expose a flat, always-valid
-//! API without a single `#[cfg]` at the call site:
+//! 下面这些模块只会编译其中一个，并别名成 `imp`（"implementation" 的缩写），
+//! 因此本文件可以暴露一套扁平的、在任何平台上都有效的 API，调用点一个 `#[cfg]`
+//! 都不需要：
 //!
 //! ```
 //! let family = rust_flutter_platform::FAMILY;
@@ -12,14 +12,14 @@
 //! let _data_dir = rust_flutter_platform::default_data_dir("frs_kit");
 //! ```
 //!
-//! # Adding a platform
+//! # 新增一个平台
 //!
-//! 1. Add `foo.rs` next to the other modules with `NAME`, `FAMILY` and
-//!    `default_data_dir`.
-//! 2. Add its `#[cfg(target_os = "foo")]` lines for `mod` and `use ... as imp`,
-//!    and add `target_os = "foo"` to the `any(...)` list of `unsupported`.
+//! 1. 在其他模块旁边加一个 `foo.rs`，内含 `NAME`、`FAMILY` 和
+//!    `default_data_dir`。
+//! 2. 为它的 `mod` 和 `use ... as imp` 加上 `#[cfg(target_os = "foo")]` 行，
+//!    并把 `target_os = "foo"` 加进 `unsupported` 的 `any(...)` 列表。
 //!
-//! The unit tests in this file fail loudly if a module forgets a constant.
+//! 某个模块漏掉常量时，本文件里的单元测试会大声失败。
 
 use std::path::PathBuf;
 
@@ -63,22 +63,21 @@ use self::windows as imp;
 )))]
 use self::unsupported as imp;
 
-/// Coarse grouping of the operating systems the app distinguishes between.
+/// 应用要区分的那些操作系统的粗略分组。
 ///
-/// Prefer this over string comparisons when behaviour (not reporting) depends on
-/// the platform.
+/// 当行为（而不是报告）取决于平台时，优先用它而不是比较字符串。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlatformFamily {
-    /// Linux, macOS and Windows.
+    /// Linux、macOS 与 Windows。
     Desktop,
-    /// Android and iOS.
+    /// Android 与 iOS。
     Mobile,
-    /// Anything else, including the web build and BSDs.
+    /// 其他一切，包括 web 构建和各类 BSD。
     Other,
 }
 
 impl PlatformFamily {
-    /// Stable, lower-case identifier suitable for logs, JSON and Dart.
+    /// 稳定的小写标识符，适合日志、JSON 和 Dart。
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -95,27 +94,26 @@ impl std::fmt::Display for PlatformFamily {
     }
 }
 
-/// Canonical lower-case name of the operating system this binary was built for.
+/// 这个二进制编译时针对的操作系统的规范小写名字。
 ///
-/// Matches [`std::env::consts::OS`] on every supported target.
+/// 在每个受支持目标上都与 [`std::env::consts::OS`] 一致。
 pub const NAME: &str = imp::NAME;
 
-/// Coarse family of [`NAME`].
+/// [`NAME`] 的粗略分组。
 pub const FAMILY: PlatformFamily = imp::FAMILY;
 
-/// True when the app is running on Linux, macOS or Windows.
+/// 应用运行在 Linux、macOS 或 Windows 上时为 true。
 #[must_use]
 pub const fn is_desktop() -> bool {
     matches!(FAMILY, PlatformFamily::Desktop)
 }
 
-/// Best-effort per-user directory where `app_id` may keep its data.
+/// `app_id` 可以用来存放数据的、尽力而为的每用户目录。
 ///
-/// This is intentionally dependency-free: it reads documented environment
-/// variables instead of linking a platform support crate. Treat the result as a
-/// hint, not a guarantee — Flutter apps that need a *sandbox-correct* location
-/// should prefer `path_provider` on the Dart side, especially on Android and
-/// iOS. `None` means "ask the platform, not this crate".
+/// 这里有意做到无依赖：读取有文档记载的环境变量，而不是链接一个平台支持
+/// crate。把结果当作提示而非保证 —— 需要 *沙盒正确* 位置的 Flutter 应用应在
+/// Dart 侧优先使用 `path_provider`，在 Android 和 iOS 上尤其如此。`None` 表示
+/// 「去问平台，别问这个 crate」。
 #[must_use]
 pub fn default_data_dir(app_id: &str) -> Option<PathBuf> {
     imp::default_data_dir(app_id)
@@ -156,8 +154,8 @@ mod tests {
     #[test]
     fn data_dir_is_absolute_and_namespaced_by_app_id() {
         let Some(dir) = default_data_dir("frs_kit") else {
-            // Legitimate on platforms where this crate has no answer, e.g. the
-            // unsupported fallback or macOS/Windows without a home directory.
+            // 在本 crate 没有答案的平台上这是合法的，例如 unsupported 回退，
+            // 或者没有 home 目录的 macOS/Windows。
             return;
         };
         assert!(dir.is_absolute(), "{dir:?} should be absolute");

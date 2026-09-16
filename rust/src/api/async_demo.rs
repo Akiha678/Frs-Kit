@@ -1,66 +1,63 @@
-//! Round-trip two: `Future`s, and the two kinds of slow work.
+//! 往返之二：`Future`，以及两种慢工作。
 //!
-//! Every function that is *not* `#[frb(sync)]` becomes a Dart `Future`. What the
-//! Rust side does inside that future decides whether the app stays smooth:
+//! 每个 *不是* `#[frb(sync)]` 的函数都会变成 Dart 的 `Future`。Rust 侧在这个
+//! future 里做什么，决定应用是否流畅：
 //!
-//! * **I/O-bound** work should `.await` a non-blocking primitive (an HTTP client,
-//!   a reactor-backed timer, ...). Nothing else competes for a worker thread.
-//! * **CPU-bound** work must be moved off the async runtime, or it starves every
-//!   other in-flight call. [`fibonacci`] shows the helper for that.
+//! * **I/O 密集** 的工作应当 `.await` 一个非阻塞原语（HTTP 客户端、由 reactor
+//!   驱动的定时器……）。这样才不会有人去抢 worker 线程。
+//! * **CPU 密集** 的工作必须搬离 async runtime，否则它会饿死所有其他在途调用。
+//!   [`fibonacci`] 演示了为此准备的 helper。
 //!
-//! A `std::thread::sleep` inside `pub async fn` would compile and would not block
-//! Dart — flutter_rust_bridge runs the runtime on its own threads — but it still
-//! occupies a runtime worker. [`delayed_hello`] therefore does its waiting on the
-//! blocking pool instead.
+//! 在 `pub async fn` 里写 `std::thread::sleep` 能编译，也不会阻塞 Dart ——
+//! flutter_rust_bridge 在自己的线程上跑 runtime —— 但它仍然占着一个 runtime
+//! worker。因此 [`delayed_hello`] 改为在 blocking pool 上等待。
 
 use std::time::Duration;
 
 use anyhow::{Result, bail};
 
-/// Longest delay [`delayed_hello`] honours, in milliseconds.
+/// [`delayed_hello`] 会遵守的最长延迟，单位毫秒。
 const MAX_DELAY_MS: u32 = 5_000;
 
-/// Largest input [`fibonacci`] accepts.
+/// [`fibonacci`] 接受的最大输入。
 ///
-/// `F(93) = 12_200_160_415_121_876_738` is the largest Fibonacci number that fits
-/// in a `u64`; `F(94)` overflows it. The loop below never forms a term beyond
-/// `F(n)`, so this bound is exact rather than conservative.
+/// `F(93) = 12_200_160_415_121_876_738` 是能放进 `u64` 的最大斐波那契数；
+/// `F(94)` 会溢出它。下面的循环永远不会算出超过 `F(n)` 的项，所以这个上界是
+/// 精确的，而不是保守的。
 const MAX_FIBONACCI_N: u32 = 93;
 
-/// Greets `name` after waiting `delay_ms` milliseconds.
+/// 等待 `delay_ms` 毫秒后向 `name` 问好。
 ///
-/// Dart signature: `Future<String> delayedHello({required String name, required
-/// int delayMs})`. Values above [`MAX_DELAY_MS`] are clamped instead of rejected,
-/// which keeps a slider in the UI from turning into an error dialog.
+/// Dart 签名：`Future<String> delayedHello({required String name, required
+/// int delayMs})`。超过 [`MAX_DELAY_MS`] 的值会被 clamp 而不是拒绝，这样 UI 上
+/// 的滑块不会变成一个错误弹窗。
 ///
-/// # Errors
+/// # 错误
 ///
-/// Cannot fail today. The `Result` is part of the scaffold on purpose: replacing
-/// the sleep with a real network call will not change the Dart signature.
+/// 目前不会失败。这里的 `Result` 是有意保留在脚手架里的：把 sleep 换成真正的
+/// 网络调用不会改变 Dart 签名。
 pub async fn delayed_hello(name: String, delay_ms: u32) -> Result<String> {
     let delay_ms = clamp_delay(delay_ms);
     run_blocking(move || std::thread::sleep(Duration::from_millis(delay_ms))).await?;
     Ok(rust_flutter_core::hello(&name))
 }
 
-/// Clamps a requested delay to what [`delayed_hello`] will honour.
+/// 把请求的延迟 clamp 到 [`delayed_hello`] 会遵守的范围。
 ///
-/// Pulled out of the function so the rule can be tested directly: `delayed_hello`
-/// itself needs the bridge's runtime, which a unit test does not have.
+/// 从函数里抽出来是为了能直接测试这条规则：`delayed_hello` 本身需要 bridge 的
+/// runtime，而单元测试没有。
 fn clamp_delay(delay_ms: u32) -> u64 {
     u64::from(delay_ms.min(MAX_DELAY_MS))
 }
 
-/// The `n`-th Fibonacci number, with `F(0) = 0` and `F(1) = 1`.
+/// 第 `n` 个斐波那契数，其中 `F(0) = 0`、`F(1) = 1`。
 ///
-/// Stands in for any CPU-bound computation: the arithmetic runs on a blocking
-/// thread, so N calls in parallel use N threads of the pool instead of queueing
-/// behind each other on the async runtime.
+/// 代表任何 CPU 密集的计算：算术跑在 blocking 线程上，所以并行的 N 次调用会各
+/// 占 blocking pool 的一个线程，而不是在 async runtime 上互相排队。
 ///
-/// # Errors
+/// # 错误
 ///
-/// Returns an error for `n > MAX_FIBONACCI_N`, where the result would not fit in a
-/// `u64`.
+/// 当 `n > MAX_FIBONACCI_N`、结果放不进 `u64` 时返回错误。
 pub async fn fibonacci(n: u32) -> Result<u64> {
     if n > MAX_FIBONACCI_N {
         bail!("n must be at most {MAX_FIBONACCI_N}, otherwise the result overflows a u64");
@@ -69,15 +66,13 @@ pub async fn fibonacci(n: u32) -> Result<u64> {
     run_blocking(move || fibonacci_blocking(n)).await
 }
 
-/// Runs `work` on a thread that is allowed to block and awaits its result.
+/// 在一个允许阻塞的线程上运行 `work`，并等待它的结果。
 ///
-/// This is the bridge-aware stand-in for `tokio::task::spawn_blocking`: on the
-/// web target there is no thread pool to spawn onto, so the helper also takes the
-/// pool flutter_rust_bridge already owns. Passing it on every platform keeps this
-/// code compiling for web without a `#[cfg]`.
+/// 这是 bridge 感知版的 `tokio::task::spawn_blocking`：web 目标上没有可以 spawn
+/// 的线程池，所以这个 helper 还要接收 flutter_rust_bridge 已经持有的那个池。在
+/// 每个平台都传入它，能让这段代码无需 `#[cfg]` 就为 web 编译。
 ///
-/// Awaiting the handle keeps the ordering intuitive: the Dart `Future` completes
-/// when the work has actually finished.
+/// await 这个 handle 让顺序符合直觉：工作真正完成时，Dart 的 `Future` 才完成。
 async fn run_blocking<F, R>(work: F) -> Result<R>
 where
     F: FnOnce() -> R + Send + 'static,
@@ -90,10 +85,10 @@ where
     Ok(handle.await?)
 }
 
-/// Iterative Fibonacci: `O(n)` time, `O(1)` space, no recursion depth limit.
+/// 迭代版斐波那契：`O(n)` 时间、`O(1)` 空间，没有递归深度限制。
 ///
-/// The loop stops at `F(n)` — after `n - 1` steps — rather than forming the usual
-/// extra `F(n + 1)`, which is what makes `n = 93` safe in a debug build.
+/// 循环停在 `F(n)` —— 走 `n - 1` 步 —— 而不是多算一个 `F(n + 1)`，这正是
+/// `n = 93` 在 debug 构建里也安全的原因。
 fn fibonacci_blocking(n: u32) -> u64 {
     if n == 0 {
         return 0;
@@ -120,7 +115,7 @@ mod tests {
 
     #[test]
     fn fibonacci_at_the_limit_does_not_overflow() {
-        // Runs in a debug build too, where overflow would panic.
+        // 在 debug 构建里也会运行，那里溢出会 panic。
         assert_eq!(
             fibonacci_blocking(MAX_FIBONACCI_N),
             12_200_160_415_121_876_738
@@ -136,7 +131,7 @@ mod tests {
 
     #[test]
     fn delays_above_the_maximum_are_clamped_not_rejected() {
-        // A UI slider must not be able to turn into an error dialog.
+        // UI 滑块不能变成错误弹窗。
         assert_eq!(clamp_delay(MAX_DELAY_MS + 1), u64::from(MAX_DELAY_MS));
         assert_eq!(clamp_delay(u32::MAX), u64::from(MAX_DELAY_MS));
     }

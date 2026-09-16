@@ -1,30 +1,29 @@
-//! The single error type the domain speaks.
+//! 领域唯一会说的错误类型。
 //!
-//! This crate never leaks `anyhow`, `flutter_rust_bridge` or raw OS errors. The
-//! bridge layer decides how a [`CoreError`] surfaces to Dart, and the platform
-//! crate maps OS failures into [`CoreError::Unsupported`] or
-//! [`CoreError::Platform`] before callers ever see them.
+//! 本 crate 从不泄漏 `anyhow`、`flutter_rust_bridge` 或原始 OS 错误。bridge 层
+//! 决定 [`CoreError`] 怎么暴露给 Dart，platform crate 则把 OS 失败映射成
+//! [`CoreError::Unsupported`] 或 [`CoreError::Platform`]，再让调用方看到。
 
 use thiserror::Error;
 
-/// Anything the domain can refuse to do.
+/// 领域可以拒绝去做的任何事。
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum CoreError {
-    /// The caller passed data the domain cannot accept.
+    /// 调用方传来的数据领域无法接受。
     #[error("invalid input: {0}")]
     InvalidInput(String),
 
-    /// The operation does not exist on the current platform.
+    /// 当前平台上不存在这个操作。
     #[error("unsupported: {0}")]
     Unsupported(String),
 
-    /// The platform refused an operation that is otherwise supported.
+    /// 平台拒绝了一个本来受支持的操作。
     #[error("platform error: {0}")]
     Platform(String),
 }
 
-/// Convenience alias for domain results.
+/// 领域结果的便捷别名。
 pub type CoreResult<T> = Result<T, CoreError>;
 
 #[cfg(test)]

@@ -39,7 +39,7 @@ macOS desktop is verified end to end, including on-device tests. The native proj
 - **Two layers of tests**: fast unit and widget tests against fakes, plus end-to-end tests that load the real native library on a device
 - **Version consistency checks**: the `flutter_rust_bridge` version lives in four places, and `just check` fails if they disagree — a mismatch is a startup crash
 - **Native bundling that works out of the box**: cargokit compiles and bundles the Rust library during the platform build, with no hand-written Podfile/CMake/Gradle glue
-- **Dependency-free state management**: `ChangeNotifier` + `InheritedNotifier`, replaceable with riverpod or bloc
+- **GetX state management and DI**: `GetxController` + `Rx` + `Obx`, so only the widgets that read a value rebuild;
 - **One entry point for tasks**: 18 `just` recipes covering generation, build, check, test and run
 - **Documentation that explains the trade-offs**: architecture, daily development, and a symptom-to-fix troubleshooting guide
 
@@ -54,7 +54,7 @@ macOS desktop is verified end to end, including on-device tests. The native proj
 | Rust async | tokio (runtime provided by flutter_rust_bridge) | Non-`sync` functions run on the multi-threaded runtime FRB creates |
 | Rust errors | anyhow + thiserror | `thiserror` for domain errors, `anyhow` at the boundary |
 | Domain layering | Separate crates (`crates/core`, `crates/platform`) | No FFI, unit-testable on their own, reusable from a CLI |
-| State management | ChangeNotifier + InheritedNotifier | No third-party dependency; `of()` subscribes, `read()` does not |
+| State management | GetX 4.7 | `GetxController` + `Rx`/`Obx` for fine-grained rebuilds, `Bindings` for dependency injection |
 | Testing | cargo test + flutter_test + integration_test | Fast layer against fakes, end-to-end layer against the real library |
 | Code quality | cargo fmt / clippy / flutter_lints + strict lints | All in `just check`; clippy warnings are errors |
 | Toolchain pinning | rustup + fvm (optional) | `rust-toolchain.toml` and `.fvmrc` pin each side |
@@ -95,7 +95,7 @@ lib/
 │   │   ├── frb_generated*.dart# generated: loader, codecs, wire functions
 │   │   └── api/               # generated: one file per Rust api module
 │   ├── data/                  # the only layer that calls the generated bindings
-│   ├── state/                 # HomeState + its InheritedNotifier scope
+│   ├── state/                 # HomeState (GetxController) + HomeBinding registration
 │   └── ui/                    # home page, four panels, theme
 rust/
 ├── Cargo.toml                 # workspace root AND the bridge crate

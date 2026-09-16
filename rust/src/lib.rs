@@ -1,33 +1,32 @@
-//! The bridge crate: the only Rust code Dart can reach.
+//! bridge crate：Dart 唯一能触达的 Rust 代码。
 //!
-//! Layering, from top to bottom:
+//! 分层，自上而下：
 //!
 //! ```text
-//! Dart (lib/)                        ->  src/api/            (this crate)
+//! Dart (lib/)                        ->  src/api/            （本 crate）
 //!   ui -> state -> data -> rust          hello, async_demo,
 //!                                        stream_demo, platform
 //!                                            |
 //!                                            v
 //!                                        crates/core, crates/platform
-//!                                        (pure Rust, no FFI)
+//!                                        （纯 Rust，无 FFI）
 //! ```
 //!
-//! Two rules keep the tree healthy:
+//! 两条规则保障这棵依赖树健康：
 //!
-//! 1. `src/api/**` is the *only* place allowed to mention `flutter_rust_bridge`.
-//!    The domain crates stay usable from tests, benchmarks and a CLI.
-//! 2. Every `pub` item in `src/api/**`, and every `pub` struct/enum it names,
-//!    becomes part of the Dart API. Prefer many small modules over one large one,
-//!    because the module path becomes the Dart file name: `api/hello.rs` becomes
-//!    `lib/src/rust/api/hello.dart`.
+//! 1. `src/api/**` 是 *唯一* 允许提到 `flutter_rust_bridge` 的地方。领域 crate
+//!    因此仍可被测试、benchmark 和 CLI 使用。
+//! 2. `src/api/**` 里每个 `pub` 条目，以及它提到的每个 `pub` struct/enum，都会
+//!    成为 Dart API 的一部分。宁可多写几个小模块，也不要写一个大模块，因为模块
+//!    路径会成为 Dart 文件名：`api/hello.rs` 变成
+//!    `lib/src/rust/api/hello.dart`。
 //!
-//! The code generator normally injects the declaration of its glue module at the
-//! top of this file. It is written out by hand below instead, so that these
-//! crate-level docs stay the first thing in the file.
+//! codegen 通常会把它的胶水模块声明注入到本文件顶部。这里改为手写在文档之后，
+//! 好让这些 crate 级文档始终是文件里的第一段内容。
 
 pub mod api;
 
-// Machine-written FFI glue, rewritten by `just gen`. Declared after the docs on
-// purpose: an injected line above them would turn them into a compile error.
+// 机器生成的 FFI 胶水代码，由 `just gen` 重写。有意声明在文档之后：注入到文档
+// 之上的那一行会把文档变成编译错误。
 #[allow(clippy::all)]
 mod frb_generated;

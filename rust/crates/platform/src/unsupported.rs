@@ -1,41 +1,37 @@
-//! Fallback for every operating system without a dedicated module — including
-//! iOS, the web build, and the BSDs.
+//! 所有没有专属模块的操作系统的回退实现 —— 包括 iOS、web 构建和各类 BSD。
 //!
-//! Compiled only when no other module matches. It keeps the crate honest: the
-//! API stays total on every target, and callers find out at *runtime* (through
-//! [`crate::FAMILY`] or a `None` data directory) that the platform has no
-//! special handling, instead of the crate failing to build.
+//! 仅在没有其他模块匹配时编译。它让这个 crate 保持诚实：API 在每个目标上都是
+//! 完备的，调用方是在 *运行时*（通过 [`crate::FAMILY`] 或一个 `None` 数据目录）
+//! 发现该平台没有特殊处理，而不是让 crate 编译失败。
 
 use std::path::PathBuf;
 
 use crate::PlatformFamily;
 
-/// See [`crate::NAME`].
+/// 见 [`crate::NAME`]。
 ///
-/// The web build is the one target where the operating system genuinely does not
-/// exist, and `std::env::consts::OS` reports `"unknown"` for `wasm32-unknown-
-/// unknown`. Naming it `"web"` keeps the value comparable with `kIsWeb` on the
-/// Dart side.
+/// web 构建是唯一一个操作系统真正不存在的目标，对于
+/// `wasm32-unknown-unknown`，`std::env::consts::OS` 报告的是 `"unknown"`。把它
+/// 命名为 `"web"` 能让该值与 Dart 侧的 `kIsWeb` 相比较。
 #[cfg(target_family = "wasm")]
 pub const NAME: &str = "web";
 
-/// See [`crate::NAME`].
+/// 见 [`crate::NAME`]。
 ///
-/// Reports the real target, so iOS logs as `ios` rather than `unsupported`.
+/// 报告真实目标，因此 iOS 记录为 `ios` 而不是 `unsupported`。
 #[cfg(not(target_family = "wasm"))]
 pub const NAME: &str = std::env::consts::OS;
 
-/// See [`crate::FAMILY`].
+/// 见 [`crate::FAMILY`]。
 ///
-/// Always [`PlatformFamily::Other`]: modules for mobile-only targets that are
-/// not Android (notably iOS) do not exist yet, and claiming `Mobile` here would
-/// make `is_desktop` lie in the other direction.
+/// 恒为 [`PlatformFamily::Other`]：目前还没有针对非 Android 的移动端目标
+/// （尤其是 iOS）的模块，而在这里声称 `Mobile` 会让 `is_desktop` 朝另一个方向
+/// 说谎。
 pub const FAMILY: PlatformFamily = PlatformFamily::Other;
 
-/// Always `None`.
+/// 恒为 `None`。
 ///
-/// A wrong guess is worse than no answer: the caller should ask the platform
-/// (for example through `path_provider` on the Dart side) instead.
+/// 猜错比没有答案更糟：调用方应该去问平台（例如 Dart 侧的 `path_provider`）。
 pub fn default_data_dir(_app_id: &str) -> Option<PathBuf> {
     None
 }
@@ -46,7 +42,7 @@ mod tests {
 
     #[test]
     fn reports_the_real_target() {
-        // For example "ios" or "freebsd" — never the literal "unsupported".
+        // 例如 "ios" 或 "freebsd" —— 绝不会是字面量 "unsupported"。
         #[cfg(target_family = "wasm")]
         assert_eq!(NAME, "web");
         #[cfg(not(target_family = "wasm"))]

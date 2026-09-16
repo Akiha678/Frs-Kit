@@ -39,7 +39,7 @@ macOS 桌面端已实测跑通（含真机端到端测试）；Android、iOS、W
 - **两层测试**：假实现驱动的快速单测/组件测试 + 真机加载真实原生库的端到端测试
 - **版本一致性校验**：`flutter_rust_bridge` 的版本出现在四处，`just check` 会校验它们是否一致（不一致会导致启动崩溃）
 - **原生打包开箱可用**：cargokit 在平台构建期自动编译并打包 Rust 库，无需手写 Podfile/CMake/Gradle 胶水
-- **零依赖状态管理**：`ChangeNotifier` + `InheritedNotifier`，可整体替换为 riverpod / bloc
+- **GetX 状态管理与依赖注入**：`GetxController` + `Rx` + `Obx`，只有读到该 `Rx` 的组件才重建；
 - **一键任务编排**：`just` 提供 18 个配方，覆盖生成、构建、检查、测试、运行
 - **文档到位**：架构、日常开发、排错三份文档，说明每处取舍与每种报错的修法
 
@@ -54,7 +54,7 @@ macOS 桌面端已实测跑通（含真机端到端测试）；Android、iOS、W
 | Rust 异步 | tokio（由 flutter_rust_bridge 提供运行时） | 非 `sync` 函数跑在 FRB 创建的多线程 runtime 上 |
 | Rust 错误处理 | anyhow + thiserror | 领域层用 `thiserror` 定义错误，边界层用 `anyhow` 透出 |
 | 领域分层 | 独立 crate（`crates/core`、`crates/platform`） | 不含 FFI，可独立单测，也能被 CLI 复用 |
-| 状态管理 | ChangeNotifier + InheritedNotifier | 零第三方依赖，`of()` 订阅、`read()` 不订阅 |
+| 状态管理 | GetX 4.7 | `GetxController` + `Rx`/`Obx` 细粒度重建，`Bindings` 负责依赖注入 |
 | 测试 | cargo test + flutter_test + integration_test | 快速层跑假实现，端到端层跑真实原生库 |
 | 代码规范 | cargo fmt / clippy / flutter_lints + 严格 lint | `just check` 一次跑完，clippy 警告即错误 |
 | 版本锁定 | rustup + fvm（可选） | `rust-toolchain.toml` 与 `.fvmrc` 分别锁定两侧工具链 |
@@ -95,7 +95,7 @@ lib/
 │   │   ├── frb_generated*.dart# 生成：加载器、编解码器、wire 函数
 │   │   └── api/               # 生成：每个 Rust api 模块一个文件
 │   ├── data/                  # 唯一调用生成绑定的层
-│   ├── state/                 # HomeState + InheritedNotifier 作用域
+│   ├── state/                 # HomeState（GetxController）+ HomeBinding 依赖注册
 │   └── ui/                    # 首页、四个面板、主题
 rust/
 ├── Cargo.toml                 # workspace 根，同时是桥接 crate

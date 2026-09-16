@@ -6,28 +6,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frs_kit/src/app.dart';
 import 'package:frs_kit/src/data/failure.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
+import 'package:get/get.dart';
 
 import 'fakes/fake_repositories.dart';
 
-/// Widget tests for the whole app, with fake repositories standing in for Rust.
+/// 整个应用的 widget 测试，用假实现 repository 顶替 Rust。
 ///
-/// These are the tests to run on every save: they need no native library, no
-/// device and no code generation, yet they exercise the real widget tree, the real
-/// `HomeState` and the real error handling. `integration_test/` covers what they
-/// deliberately cannot: the actual bridge.
+/// 这些是每次保存都要跑的测试：不需要原生库、不需要设备、也不需要代码
+/// 生成，但走的是真实的 widget 树、真实的 `HomeState` 和真实的错误处理。
+/// `integration_test/` 负责它们刻意覆盖不到的那部分：真正的 bridge。
 void main() {
   late FakeGreetingRepository greetings;
 
-  setUp(() => greetings = FakeGreetingRepository());
-  tearDown(() => greetings.dispose());
+  setUp(() {
+    // GetX 把所有东西都放在一个全局容器里。`testMode` 则让
+    // GetMaterialApp 不在测试环境里真的去驱动路由。
+    Get.testMode = true;
+    greetings = FakeGreetingRepository();
+  });
 
-  /// Pumps the app on a surface tall enough to hold every panel.
+  tearDown(() async {
+    // 少了这一步，上一个测试的 controller 仍然注册着 —— 而且仍然攥着
+    // *它自己*那套假实现 —— 于是下一次 `Get.find<HomeState>()` 会拿到陈旧实例。
+    // 这就是 GetX 里对应「widget 树被拆掉」的那件事。
+    Get.reset();
+    await greetings.dispose();
+  });
+
+  /// 在一块高到放得下所有面板的画布上 pump 出应用。
   ///
-  /// The default 800x600 test window is shorter than the page, and a `ListView`
-  /// does not build what is below the fold — so a tap on a lower panel would fail
-  /// with "found 0 widgets" and, after scrolling, with "would not hit test". A tall
-  /// window keeps the test about behaviour instead of about scrolling. Scrolling
-  /// itself is covered by the layout tests in `integration_test/`.
+  /// 默认的 800x600 测试窗口比页面矮，而 `ListView` 不会构建折叠线以下的
+  /// 内容 —— 于是点靠下的面板会先报 "found 0 widgets"，滚动之后又报
+  /// "would not hit test"。给一个高窗口，测试关心的就是行为而不是滚动；
+  /// 滚动本身由 `integration_test/` 里的布局测试覆盖。
   Future<void> pumpApp(WidgetTester tester, {Widget? app}) async {
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1;
@@ -43,8 +54,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// What the app compares Rust's answer against, computed the same way the
-  /// platform panel does.
+  /// 应用拿 Rust 的答案与之比较的基准值，算法与平台面板相同。
   String dartPlatform() =>
       kIsWeb ? 'web' : defaultTargetPlatform.name.toLowerCase();
 
@@ -66,9 +76,8 @@ void main() {
     expect(find.text('fakeos'), findsOneWidget);
     expect(find.text('/tmp/fakeos/frs_kit'), findsOneWidget);
 
-    // The fake claims to be `fakeos`, which cannot match the platform this test
-    // runs on, so the panel must say so: that comparison is the app's only way to
-    // notice a native library built for the wrong target.
+    // 假实现自称 `fakeos`，不可能和跑测试的平台对上，所以面板必须指出来：
+    // 这个比较是应用察觉「原生库编译目标不对」的唯一途径。
     expect(find.text('stale library?'), findsOneWidget);
   });
 
@@ -174,8 +183,8 @@ void main() {
     await tester.tap(find.text('Run delayed call'));
     await tester.pump();
 
-    // Pumped time drives the state's periodic ticker: the same timer a real run
-    // uses to show that the isolate stayed free.
+    // 被 pump 的时间会驱动状态里的周期 ticker：真实运行时用的就是同一个
+    // 定时器，用来证明 isolate 一直空闲。
     await tester.pump(const Duration(milliseconds: 250));
 
     expect(
@@ -188,8 +197,7 @@ void main() {
     gate.complete('Hello, Flutter!');
     await tester.pumpAndSettle();
 
-    // Two lines now carry it: the synchronous one always did, the async one just
-    // arrived.
+    // 现在有两行同时显示它：同步那行一直都有，异步那行刚回来。
     expect(find.text('Hello, Flutter!'), findsNWidgets(2));
     expect(find.text('Waiting…'), findsNothing);
   });
@@ -247,11 +255,11 @@ void main() {
     await tester.tap(find.text('Compute in Rust'));
     await tester.pumpAndSettle();
 
-    // The fake echoes its input, so an input of 40 renders as 40, and the panel
-    // also reports how long the call took.
+    // 假实现把输入原样返回，所以输入 40 就渲染成 40；面板同时上报这次
+    // 调用花了多久。
     expect(find.text('40'), findsWidgets);
-    // Several sliders render a duration, so match the shape of the value rather
-    // than the word: the panel must report a measured time, not a placeholder.
+    // 页面上有好几处都会渲染耗时，所以匹配值的形状而不是那个词：
+    // 面板上报的必须是实测时间，不能是占位符。
     expect(find.textContaining(RegExp(r'^\d+ ms$')), findsWidgets);
   });
 

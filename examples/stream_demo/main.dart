@@ -1,15 +1,15 @@
-/// A Rust function that pushes values into Dart.
+/// 一个往 Dart 里推值的 Rust 函数。
 ///
-/// Run it with:
+/// 这样运行：
 ///
 /// ```sh
 /// flutter run -t examples/stream_demo/main.dart -d macos
 /// ```
 ///
-/// `countdown` in `rust/src/api/stream_demo.rs` takes a `StreamSink<u32>` and
-/// becomes a plain Dart `Stream<int>`. Press Stop in the middle of a countdown:
-/// that cancels the subscription, the next send from Rust fails, and the loop
-/// returns instead of counting down for nobody.
+/// `rust/src/api/stream_demo.rs` 里的 `countdown` 接收一个 `StreamSink<u32>`，
+/// 变成一个普通的 Dart `Stream<int>`。倒数中途按 Stop：那会取消订阅，Rust
+/// 下一次 send 就会失败，于是循环直接返回，而不是为一个没人听的倒数继续数
+/// 下去。
 library;
 
 import 'dart:async';
@@ -20,16 +20,16 @@ import 'package:frs_kit/src/data/greeting_repository.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
 import 'package:frs_kit/src/ui/theme.dart';
 
-/// Loads the native library before the first frame.
+/// 在第一帧之前加载原生库。
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initRustBridge();
   runApp(const StreamDemoExample());
 }
 
-/// A one-screen example app.
+/// 单屏的示例应用。
 class StreamDemoExample extends StatefulWidget {
-  /// Creates the example.
+  /// 创建这个示例。
   const StreamDemoExample({super.key});
 
   @override
@@ -43,7 +43,7 @@ class _StreamDemoExampleState extends State<StreamDemoExample> {
   StreamSubscription<int>? _subscription;
   String? _error;
 
-  /// Whether the stream is still open.
+  /// 流是否仍然开着。
   bool get _isRunning => _subscription != null;
 
   void _start() {
@@ -69,7 +69,7 @@ class _StreamDemoExampleState extends State<StreamDemoExample> {
   Future<void> _stop() async {
     final StreamSubscription<int>? subscription = _subscription;
     setState(() => _subscription = null);
-    // Cancelling is what tells Rust to stop pushing.
+    // 正是「取消」这一步在告诉 Rust 别再推了。
     await subscription?.cancel();
   }
 

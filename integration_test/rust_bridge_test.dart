@@ -7,23 +7,21 @@ import 'package:frs_kit/src/data/platform_repository.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
 import 'package:integration_test/integration_test.dart';
 
-/// End-to-end tests against the real Rust library.
+/// 对着真实 Rust 库跑的端到端测试。
 ///
-/// Nothing here is faked: `initRustBridge` loads
-/// `rust/target/release/librust_lib_frs_kit.*`, and every expectation below is
-/// answered by `rust/src/api/**`. That makes these the only tests that can catch a
-/// stale library, a domain rule that changed in Rust, or an error message that no
-/// longer survives the trip.
+/// 这里没有任何东西被换成假实现：`initRustBridge` 会加载
+/// `rust/target/release/librust_lib_frs_kit.*`，下面每一条期望都由
+/// `rust/src/api/**` 给出答案。正因如此，只有这些测试才抓得到陈旧的库、Rust
+/// 里改过的 domain 规则，或者一句已经走不完全程的错误消息。
 ///
-/// They need the native library to exist, so build it first:
+/// 它们要求原生库已经存在，所以先构建：
 ///
 /// ```sh
 /// just build      # cargo build --release --manifest-path rust/Cargo.toml
 /// just test-e2e   # flutter test integration_test
 /// ```
 ///
-/// Everything that can be checked without Rust lives in `test/` instead, where it
-/// runs in milliseconds on every save.
+/// 凡是不需要 Rust 就能检查的东西，都放在 `test/` 里，那里每次保存只跑几毫秒。
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -48,8 +46,8 @@ void main() {
     });
 
     test('on a desktop target a data directory is guessed', () {
-      // The only target guaranteed to have an answer. On mobile and the web this
-      // crate returns null on purpose, so the assertion is conditional.
+      // 唯一保证有答案的目标平台。在移动端和 web 上，这个 crate 故意返回
+      // null，所以这条断言是有条件的。
       if (!platform.isDesktop()) return;
 
       final String? dir = platform.dataDir('com.example.frs_kit');
@@ -134,7 +132,7 @@ void main() {
       await greetings.delayedHello(name: 'Ada', delayMs: 100000);
       stopwatch.stop();
 
-      // MAX_DELAY_MS is 5000 ms in Rust.
+      // Rust 里 MAX_DELAY_MS 是 5000 ms。
       expect(stopwatch.elapsedMilliseconds, lessThan(6000));
     });
   });

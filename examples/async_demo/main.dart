@@ -1,14 +1,14 @@
-/// Two kinds of "slow" Rust work, side by side.
+/// 两种「慢」Rust 工作，并排摆在一起。
 ///
-/// Run it with:
+/// 这样运行：
 ///
 /// ```sh
 /// flutter run -t examples/async_demo/main.dart -d macos
 /// ```
 ///
-/// The left half waits on a worker thread (`delayed_hello`), the right half burns
-/// CPU on the blocking pool (`fibonacci`). Start both and watch that neither one
-/// stops the other, or the UI: `rust/src/api/async_demo.rs` explains why.
+/// 左半边在 worker 线程上等（`delayed_hello`），右半边在 blocking pool 里烧
+/// CPU（`fibonacci`）。两个都启动，看它们谁都不会挡住对方，也不会挡住 UI：
+/// `rust/src/api/async_demo.rs` 解释了其中的原因。
 library;
 
 import 'dart:async';
@@ -19,16 +19,16 @@ import 'package:frs_kit/src/data/greeting_repository.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
 import 'package:frs_kit/src/ui/theme.dart';
 
-/// Loads the native library before the first frame.
+/// 在第一帧之前加载原生库。
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initRustBridge();
   runApp(const AsyncDemoExample());
 }
 
-/// A one-screen example app.
+/// 单屏的示例应用。
 class AsyncDemoExample extends StatefulWidget {
-  /// Creates the example.
+  /// 创建这个示例。
   const AsyncDemoExample({super.key});
 
   @override
@@ -48,11 +48,10 @@ class _AsyncDemoExampleState extends State<AsyncDemoExample> {
   bool _isComputing = false;
   Duration? _elapsed;
 
-  /// Timer ticks counted while a call is in flight.
+  /// 调用挂起期间数到的定时器 tick 次数。
   ///
-  /// This is the evidence that the isolate stayed free: a blocked isolate cannot
-  /// deliver timer callbacks, so the number would freeze. The same trick the app's
-  /// async panel uses.
+  /// 这就是 isolate 一直空闲的证据：被占住的 isolate 没法派发定时器回调，
+  /// 那个数字就会停住。应用的 async 面板用的是同一个手法。
   int _ticks = 0;
   Timer? _ticker;
 
@@ -206,7 +205,7 @@ class _AsyncDemoExampleState extends State<AsyncDemoExample> {
   }
 }
 
-/// A titled box, kept local to the example so it stays self-contained.
+/// 带标题的盒子，留在示例内部，好让示例保持自包含。
 class _Panel extends StatelessWidget {
   const _Panel({
     required this.title,

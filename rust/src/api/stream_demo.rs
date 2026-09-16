@@ -1,9 +1,8 @@
-//! Round-trip three: a `Stream` that Rust pushes into.
+//! 往返之三：一个由 Rust 主动推入的 `Stream`。
 //!
-//! A function that takes a [`StreamSink`] argument returns a Dart `Stream`
-//! instead of a `Future`. flutter_rust_bridge runs the body on a worker thread
-//! (`FfiCallMode::Normal` spawns; only `#[frb(sync)]` would run inline), which is
-//! why the sleeps below cannot stutter the UI.
+//! 接受 [`StreamSink`] 参数的函数会返回 Dart 的 `Stream` 而不是 `Future`。
+//! flutter_rust_bridge 在 worker 线程上运行函数体（`FfiCallMode::Normal` 会
+//! spawn；只有 `#[frb(sync)]` 才内联执行），所以下面的 sleep 不会卡住 UI。
 
 use std::time::Duration;
 
@@ -11,31 +10,30 @@ use anyhow::Result;
 
 use crate::frb_generated::StreamSink;
 
-/// Longest interval between two emissions, in milliseconds.
+/// 两次发送之间的最长间隔，单位毫秒。
 const MAX_INTERVAL_MS: u32 = 2_000;
 
-/// Counts down from `count` to `1`, one value per `interval_ms`, then closes.
+/// 从 `count` 倒数到 `1`，每 `interval_ms` 发一个值，然后关闭。
 ///
-/// Dart signature: `Stream<int> countdown({required int count, required int
-/// intervalMs})`. Values above [`MAX_INTERVAL_MS`] are clamped, so a UI slider
-/// cannot make the stream crawl for minutes.
+/// Dart 签名：`Stream<int> countdown({required int count, required int
+/// intervalMs})`。超过 [`MAX_INTERVAL_MS`] 的值会被 clamp，所以 UI 滑块无法让
+/// 这个流慢到几分钟才发一次。
 ///
-/// Returning `Ok(())` closes the stream normally. To fail it instead, send
-/// `sink.add_error(...)` and still return `Ok(())`, or return `Err(...)` — either
-/// way Dart sees an error event rather than a silent stop.
+/// 返回 `Ok(())` 会正常关闭流。要让它失败，可以发 `sink.add_error(...)` 之后
+/// 仍然返回 `Ok(())`，或者直接返回 `Err(...)` —— 两种方式 Dart 看到的都是错误
+/// 事件，而不是静默停止。
 ///
-/// # Cancellation
+/// # 取消
 ///
-/// When Dart cancels the subscription (a disposed widget, a rebuilt `FutureBuilder`
-/// with a new key), the next `add` fails. Breaking out of the loop on that failure
-/// is what keeps a cancelled `Stream` from holding a worker thread until it would
-/// have finished on its own.
+/// 当 Dart 取消订阅（widget 被 dispose、带新 key 的 `FutureBuilder` 重建）后，
+/// 下一次 `add` 会失败。在这个失败上跳出循环，才能让已取消的 `Stream` 不再占着
+/// worker 线程直到它自己跑完。
 pub fn countdown(count: u32, interval_ms: u32, sink: StreamSink<u32>) -> Result<()> {
     let interval = clamp_interval(interval_ms);
 
     for remaining in (1..=count).rev() {
         if sink.add(remaining).is_err() {
-            break; // The Dart side stopped listening.
+            break; // Dart 侧已停止监听。
         }
         std::thread::sleep(interval);
     }
@@ -43,10 +41,10 @@ pub fn countdown(count: u32, interval_ms: u32, sink: StreamSink<u32>) -> Result<
     Ok(())
 }
 
-/// Clamps a requested interval to what [`countdown`] will honour.
+/// 把请求的间隔 clamp 到 [`countdown`] 会遵守的范围。
 ///
-/// Pulled out of the function so the rule can be tested directly: `countdown` needs
-/// a `StreamSink`, which only the bridge can build.
+/// 从函数里抽出来是为了能直接测试这条规则：`countdown` 需要一个 `StreamSink`，
+/// 而只有 bridge 能构造它。
 fn clamp_interval(interval_ms: u32) -> Duration {
     Duration::from_millis(u64::from(interval_ms.min(MAX_INTERVAL_MS)))
 }

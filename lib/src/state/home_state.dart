@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 
 import '../app_info.dart';
 import '../data/failure.dart';
@@ -8,190 +8,166 @@ import '../data/greeting_repository.dart';
 import '../data/platform_repository.dart';
 import '../rust/bridge.dart';
 
-/// Everything the home page renders, in one [ChangeNotifier].
+/// 首页渲染所需的一切，以 GetX controller 的形式提供。
 ///
-/// The scaffold deliberately ships without a state-management package: one
-/// notifier plus an `InheritedNotifier` scope is enough at this size, costs no
-/// dependency, and is a drop-in target for riverpod or bloc later — swap
-/// `HomeStateScope` and the widgets keep working.
+/// 状态放在 `Rx` 值里而不是普通字段里。这样 widget 只在真正*读取*某个 `Rx` 的地方
+/// （也就是 `Obx` 内部）重建，而不是任何变化都让整页重建。比如在名字输入框里打字，
+/// 只会重建那个同步预览，别的什么都不动：倒数面板和 CPU 面板不会因此重跑。
 ///
-/// The repositories are injected so widget tests can drive the whole UI without
-/// the native library being built.
-class HomeState extends ChangeNotifier {
-  /// Creates the state, defaulting to the real repositories.
+/// 改动这个文件之前，有两点值得知道：
+///
+/// * 直接赋值（`state.delayMs.value = 400`），不要写 setter；新值与旧值相等时 `Rx`
+///   会跳过通知，所以不需要手动加判断；
+/// * 生命周期钩子是 GetX 的，不是 `ChangeNotifier` 的：实例构建时跑 [onInit]，实例
+///   被删除时跑 [onClose]。这里没有一处调用 `notifyListeners`，也没有 `dispose`。
+///
+/// repository 要么通过构造函数传入（单元测试），要么从 Get 容器取得（由
+/// `HomeBinding` 注册）。
+class HomeState extends GetxController {
+  /// 创建 controller。
+  ///
+  /// [greetings] 和 [platform] 是可选的，这样测试可以完全不依赖 Get 容器来驱动
+  /// controller。当它们为 `null` 时 —— `HomeBinding` 就是这么构造的 —— 会从 Get
+  /// 解析，而那时 Get 已经把这两个注册好了。
   HomeState({
     GreetingRepository? greetings,
     PlatformRepository? platform,
     this.appId = kAppId,
-  }) : greetings = greetings ?? const GreetingRepository(),
-       platform = platform ?? const PlatformRepository();
+  }) : greetings = greetings ?? Get.find<GreetingRepository>(),
+       platform = platform ?? Get.find<PlatformRepository>();
 
-  /// How often [busyTicks] advances while a call is in flight.
+  /// 调用进行期间 [busyTicks] 递增的间隔。
   static const Duration busyTickInterval = Duration(milliseconds: 50);
 
-  /// The bridge-backed repositories this state drives.
+  /// 这个 controller 驱动的、由 bridge 支撑的 repository。
   final GreetingRepository greetings;
 
-  /// The bridge-backed repository for host facts.
+  /// 由 bridge 支撑的宿主机信息 repository。
   final PlatformRepository platform;
 
-  /// Application id used to namespace the data directory.
+  /// 用于给数据目录划分命名空间的应用 id。
   final String appId;
 
-  bool _disposed = false;
+  /// [onClose] 跑过之后置位，好让迟到的回调直接退出。
+  bool _closed = false;
 
-  // ------------------------------------------------------------ host facts --
+  // ------------------------------------------------------------- 宿主信息 --
 
-  PlatformSummary? _summary;
-  String? _summaryError;
+  /// 宿主机信息；在 [loadSummary] 运行之前（或它失败时）为 `null`。
+  final Rxn<PlatformSummary> summary = Rxn<PlatformSummary>();
 
-  /// Host facts, or `null` until [loadSummary] runs (or if it failed).
-  PlatformSummary? get summary => _summary;
+  /// [summary] 为 `null` 时的原因。
+  final RxnString summaryError = RxnString();
 
-  /// Why [summary] is `null`, when it is.
-  String? get summaryError => _summaryError;
-
-  /// Reads the host. Synchronous and cheap: call it once, from `initState`.
+  /// 读取宿主机信息。同步且廉价，所以在 [onInit] 里跑一次；首次构建时这些值就已经
+  /// 就绪。
   void loadSummary() {
     try {
-      _summary = platform.summary(appId);
-      _summaryError = null;
+      summary.value = platform.summary(appId);
+      summaryError.value = null;
     } catch (error) {
-      _summary = null;
-      _summaryError = BridgeFailure.from(error).message;
+      summary.value = null;
+      summaryError.value = BridgeFailure.from(error).message;
     }
-    _notify();
   }
 
-  // -------------------------------------------------------------- greeting --
+  // ------------------------------------------------------------- greeting --
 
-  String _name = 'Flutter';
-  GreetingStyle _style = GreetingStyle.plain;
-  Greeting? _greeting;
-  bool _isGreeting = false;
-  String? _greetingError;
+  /// 输入框当前的值。
+  final RxString name = 'Flutter'.obs;
 
-  /// Current text-field value.
-  String get name => _name;
+  /// 选中的语气。
+  final Rx<GreetingStyle> style = GreetingStyle.plain.obs;
 
-  /// Selected tone.
-  GreetingStyle get style => _style;
+  /// Rust 最近渲染出的 greeting；还没有成功过则为 `null`。
+  final Rxn<Greeting> greeting = Rxn<Greeting>();
 
-  /// The last greeting Rust rendered, or `null` if none succeeded yet.
-  Greeting? get greeting => _greeting;
+  /// 是否有一次 [submitGreeting] 调用正在进行。
+  final RxBool isGreeting = false.obs;
 
-  /// Whether a [submitGreeting] call is in flight.
-  bool get isGreeting => _isGreeting;
+  /// 上一次 [submitGreeting] 失败的原因（如果失败了）。
+  final RxnString greetingError = RxnString();
 
-  /// Why the last [submitGreeting] failed, when it did.
-  String? get greetingError => _greetingError;
-
-  /// The synchronous round-trip, evaluated on every build.
+  /// 同步往返，每次读取这个 getter 都会重新求值。
   ///
-  /// This is what `#[frb(sync)]` buys: no `Future`, no rebuild needed to see the
-  /// result, because the value is already there. Keep such getters cheap — they
-  /// run on the UI isolate.
-  String get instantHello => greetings.hello(_name);
-
-  /// Updates [name] and rebuilds.
-  void setName(String value) {
-    if (value == _name) return;
-    _name = value;
-    _notify();
-  }
-
-  /// Updates [style] and rebuilds.
-  void setStyle(GreetingStyle value) {
-    if (value == _style) return;
-    _style = value;
-    _notify();
-  }
-
-  /// Asks Rust to validate and render a greeting for the current input.
+  /// 这就是 `#[frb(sync)]` 换来的好处：没有 `Future` 要等，因为值已经在那里了。在
+  /// `Obx` 里读取它还会让那个 `Obx` 订阅 [name]，实时预览之所以能随输入更新，靠的
+  /// 就是这一点。
   ///
-  /// Failures are kept in [greetingError] rather than thrown: the UI shows them
-  /// next to the field, and a blank name is an expected mistake, not a crash.
+  /// 这类 getter 要保持廉价：它们在 UI isolate 上、每次重建都会跑。
+  String get instantHello => greetings.hello(name.value);
+
+  /// 让 Rust 为当前输入校验并渲染一条 greeting。
+  ///
+  /// 失败保存在 [greetingError] 里而不是抛出：UI 把它们显示在输入框旁边，而名字为空
+  /// 是预期内的失误，不是崩溃。
   Future<void> submitGreeting() async {
-    if (_isGreeting) return;
-    _isGreeting = true;
-    _greetingError = null;
-    _notify();
+    if (isGreeting.value) return;
+    isGreeting.value = true;
+    greetingError.value = null;
 
     try {
-      _greeting = await greetings.greet(name: _name, style: _style);
-    } on BridgeFailure catch (failure) {
-      _greeting = null;
-      _greetingError = failure.message;
-    } finally {
-      _isGreeting = false;
-      _notify();
-    }
-  }
-
-  // ----------------------------------------------------------- async demo --
-
-  int _delayMs = 800;
-  String? _delayedMessage;
-  bool _isDelayedRunning = false;
-  String? _delayedError;
-  int _busyTicks = 0;
-  Timer? _busyTicker;
-
-  /// Requested delay for [runDelayedHello], in milliseconds.
-  int get delayMs => _delayMs;
-
-  /// Result of the last successful [runDelayedHello].
-  String? get delayedMessage => _delayedMessage;
-
-  /// Whether [runDelayedHello] is in flight.
-  bool get isDelayedRunning => _isDelayedRunning;
-
-  /// Why the last [runDelayedHello] failed, when it did.
-  String? get delayedError => _delayedError;
-
-  /// Counter that keeps advancing while the UI isolate is idle.
-  ///
-  /// This is the visible proof that a slow Rust call does not block Flutter: if
-  /// the isolate were blocked, these timer callbacks could not run, and the
-  /// number would freeze. Compare it with the delay that was requested.
-  int get busyTicks => _busyTicks;
-
-  /// Updates [delayMs] and rebuilds.
-  void setDelayMs(int value) {
-    if (value == _delayMs) return;
-    _delayMs = value;
-    _notify();
-  }
-
-  /// Runs the async round-trip and counts UI ticks while it waits.
-  Future<void> runDelayedHello() async {
-    if (_isDelayedRunning) return;
-    _isDelayedRunning = true;
-    _delayedError = null;
-    _busyTicks = 0;
-    _startBusyTicker();
-    _notify();
-
-    try {
-      _delayedMessage = await greetings.delayedHello(
-        name: _name,
-        delayMs: _delayMs,
+      greeting.value = await greetings.greet(
+        name: name.value,
+        style: style.value,
       );
     } on BridgeFailure catch (failure) {
-      _delayedMessage = null;
-      _delayedError = failure.message;
+      greeting.value = null;
+      greetingError.value = failure.message;
+    } finally {
+      isGreeting.value = false;
+    }
+  }
+
+  // ------------------------------------------------------------- 异步演示 --
+
+  /// [runDelayedHello] 请求的延迟，单位毫秒。
+  final RxInt delayMs = 800.obs;
+
+  /// 上一次成功的 [runDelayedHello] 的结果。
+  final RxnString delayedMessage = RxnString();
+
+  /// [runDelayedHello] 是否正在进行。
+  final RxBool isDelayedRunning = false.obs;
+
+  /// 上一次 [runDelayedHello] 失败的原因（如果失败了）。
+  final RxnString delayedError = RxnString();
+
+  /// UI isolate 空闲期间持续递增的计数器。
+  ///
+  /// 它是「慢速 Rust 调用不会阻塞 Flutter」的可见证据：如果 isolate 被阻塞，这些
+  /// 定时器回调就跑不起来，数字会停住。把它和请求的延迟对照着看。
+  final RxInt busyTicks = 0.obs;
+
+  Timer? _busyTicker;
+
+  /// 执行异步往返，并在等待期间统计 UI tick。
+  Future<void> runDelayedHello() async {
+    if (isDelayedRunning.value) return;
+    isDelayedRunning.value = true;
+    delayedError.value = null;
+    busyTicks.value = 0;
+    _startBusyTicker();
+
+    try {
+      delayedMessage.value = await greetings.delayedHello(
+        name: name.value,
+        delayMs: delayMs.value,
+      );
+    } on BridgeFailure catch (failure) {
+      delayedMessage.value = null;
+      delayedError.value = failure.message;
     } finally {
       _stopBusyTicker();
-      _isDelayedRunning = false;
-      _notify();
+      isDelayedRunning.value = false;
     }
   }
 
   void _startBusyTicker() {
     _busyTicker?.cancel();
     _busyTicker = Timer.periodic(busyTickInterval, (_) {
-      _busyTicks++;
-      _notify();
+      if (_closed) return;
+      busyTicks.value++;
     });
   }
 
@@ -200,160 +176,130 @@ class HomeState extends ChangeNotifier {
     _busyTicker = null;
   }
 
-  // ---------------------------------------------------------- stream demo --
+  // --------------------------------------------------------------- 流演示 --
 
-  int _countdownFrom = 5;
-  int _intervalMs = 300;
-  final List<int> _countdownValues = <int>[];
-  bool _isCounting = false;
-  String? _countdownError;
+  /// 下一次倒数起始的那个值。
+  final RxInt countdownFrom = 5.obs;
+
+  /// 两个值之间的间隔，单位毫秒。
+  final RxInt intervalMs = 300.obs;
+
+  /// 到目前为止收到的值，最早的在最前。
+  ///
+  /// 它是 `RxList`，所以 `add` 自身就会发出通知。UI 侧请当作只读：什么时候清空由
+  /// controller 决定。
+  final RxList<int> countdownValues = <int>[].obs;
+
+  /// 倒数流是否仍然开着。
+  final RxBool isCounting = false.obs;
+
+  /// 倒数失败的原因（如果失败了）。
+  final RxnString countdownError = RxnString();
+
   StreamSubscription<int>? _countdownSubscription;
 
-  /// First value the next countdown starts from.
-  int get countdownFrom => _countdownFrom;
-
-  /// Interval between two values, in milliseconds.
-  int get intervalMs => _intervalMs;
-
-  /// Values received so far, oldest first.
-  List<int> get countdownValues => List<int>.unmodifiable(_countdownValues);
-
-  /// Whether the countdown stream is still open.
-  bool get isCounting => _isCounting;
-
-  /// Why the countdown failed, when it did.
-  String? get countdownError => _countdownError;
-
-  /// Updates [countdownFrom] and rebuilds.
-  void setCountdownFrom(int value) {
-    if (value == _countdownFrom) return;
-    _countdownFrom = value;
-    _notify();
-  }
-
-  /// Updates [intervalMs] and rebuilds.
-  void setIntervalMs(int value) {
-    if (value == _intervalMs) return;
-    _intervalMs = value;
-    _notify();
-  }
-
-  /// Subscribes to a fresh countdown stream, discarding earlier values.
+  /// 订阅一个全新的倒数流，丢弃之前的那些值。
   void startCountdown() {
-    if (_isCounting) return;
+    if (isCounting.value) return;
 
-    _countdownValues.clear();
-    _countdownError = null;
-    _isCounting = true;
-    _notify();
+    countdownValues.clear();
+    countdownError.value = null;
+    isCounting.value = true;
 
     _countdownSubscription = greetings
-        .countdown(count: _countdownFrom, intervalMs: _intervalMs)
+        .countdown(count: countdownFrom.value, intervalMs: intervalMs.value)
         .listen(
-          (value) {
-            _countdownValues.add(value);
-            _notify();
+          (int value) {
+            if (_closed) return;
+            countdownValues.add(value);
           },
           onError: (Object error) {
-            _countdownError = BridgeFailure.from(error).message;
-            _isCounting = false;
+            if (_closed) return;
+            countdownError.value = BridgeFailure.from(error).message;
+            isCounting.value = false;
             _countdownSubscription = null;
-            _notify();
           },
           onDone: () {
-            _isCounting = false;
+            if (_closed) return;
+            isCounting.value = false;
             _countdownSubscription = null;
-            _notify();
           },
           cancelOnError: true,
         );
   }
 
-  /// Cancels the subscription, which stops the Rust loop on its next send.
+  /// 取消订阅，Rust 侧的循环会在下一次发送时停下。
   ///
-  /// Worth wiring to a visible button: seeing the same code path handle "user
-  /// changed their mind" is how you find out whether cancellation really reaches
-  /// Rust.
+  /// 值得把它接到一个看得见的按钮上：用同一条代码路径去处理「用户改主意了」，才能
+  /// 看出取消是否真的传到了 Rust。
   Future<void> stopCountdown() async {
-    final subscription = _countdownSubscription;
+    final StreamSubscription<int>? subscription = _countdownSubscription;
     _countdownSubscription = null;
-    _isCounting = false;
-    _notify();
+    isCounting.value = false;
     await subscription?.cancel();
   }
 
-  // ------------------------------------------------------------- cpu demo --
+  // ------------------------------------------------------------- CPU 演示 --
 
-  int _fibonacciInput = 40;
-  BigInt? _fibonacciResult;
-  Duration? _fibonacciElapsed;
-  bool _isComputing = false;
-  String? _fibonacciError;
+  /// 下一次 [computeFibonacci] 调用的输入。
+  final RxInt fibonacciInput = 40.obs;
 
-  /// Input for the next [computeFibonacci] call.
-  int get fibonacciInput => _fibonacciInput;
+  /// 上一次成功的 [computeFibonacci] 的结果。
+  final Rxn<BigInt> fibonacciResult = Rxn<BigInt>();
 
-  /// Result of the last successful [computeFibonacci].
-  BigInt? get fibonacciResult => _fibonacciResult;
+  /// 上一次 [computeFibonacci] 耗费的挂钟时间。
+  final Rxn<Duration> fibonacciElapsed = Rxn<Duration>();
 
-  /// Wall-clock time the last [computeFibonacci] took.
-  Duration? get fibonacciElapsed => _fibonacciElapsed;
+  /// [computeFibonacci] 是否正在进行。
+  final RxBool isComputing = false.obs;
 
-  /// Whether [computeFibonacci] is in flight.
-  bool get isComputing => _isComputing;
+  /// 上一次 [computeFibonacci] 失败的原因（如果失败了）。
+  final RxnString fibonacciError = RxnString();
 
-  /// Why the last [computeFibonacci] failed, when it did.
-  String? get fibonacciError => _fibonacciError;
-
-  /// Updates [fibonacciInput] and rebuilds.
-  void setFibonacciInput(int value) {
-    if (value == _fibonacciInput) return;
-    _fibonacciInput = value;
-    _notify();
-  }
-
-  /// Runs CPU-bound work in Rust and measures how long it took.
+  /// 在 Rust 里执行 CPU 密集型工作，并测量耗时。
   Future<void> computeFibonacci() async {
-    if (_isComputing) return;
-    _isComputing = true;
-    _fibonacciError = null;
-    _notify();
+    if (isComputing.value) return;
+    isComputing.value = true;
+    fibonacciError.value = null;
 
-    final stopwatch = Stopwatch()..start();
+    final Stopwatch stopwatch = Stopwatch()..start();
     try {
-      _fibonacciResult = await greetings.fibonacci(_fibonacciInput);
-      _fibonacciElapsed = stopwatch.elapsed;
+      fibonacciResult.value = await greetings.fibonacci(fibonacciInput.value);
+      fibonacciElapsed.value = stopwatch.elapsed;
     } on BridgeFailure catch (failure) {
-      _fibonacciResult = null;
-      _fibonacciElapsed = null;
-      _fibonacciError = failure.message;
+      fibonacciResult.value = null;
+      fibonacciElapsed.value = null;
+      fibonacciError.value = failure.message;
     } finally {
       stopwatch.stop();
-      _isComputing = false;
-      _notify();
+      isComputing.value = false;
     }
   }
 
-  // --------------------------------------------------------------- lifecyle --
+  // ------------------------------------------------------------- 生命周期 --
 
-  /// Notifies listeners unless this state has already been disposed.
+  /// 实例构建时 GetX 会调用它。
   ///
-  /// Stream events and timer ticks can arrive after `dispose`, and notifying a
-  /// disposed [ChangeNotifier] throws. Guarding here keeps that rule in one place
-  /// instead of in every callback.
-  void _notify() {
-    if (_disposed) return;
-    notifyListeners();
+  /// 在这里（而不是在某个 widget 的 `initState` 里）读取宿主机信息，首次构建才能
+  /// 直接显示平台事实，同时也把这个副作用挡在 widget 树之外。
+  @override
+  void onInit() {
+    super.onInit();
+    loadSummary();
   }
 
+  /// 实例被删除（或调用了 `dispose()`）时 GetX 会调用它。
+  ///
+  /// 之后流事件和定时器 tick 仍可能到达，而给已销毁的 `Rx` 赋值会报错，所以用
+  /// [_closed] 把它们挡在外面。
   @override
-  void dispose() {
-    _disposed = true;
+  void onClose() {
+    _closed = true;
     _stopBusyTicker();
-    // `dispose` is synchronous, so cancellation cannot be awaited here. Rust
-    // notices on its next send, which is what makes this safe to fire and forget.
+    // `onClose` 是同步的，所以这个取消操作没法 await。Rust 会在下一次发送时察觉，
+    // 这正是可以放心地发出即忘的原因。
     unawaited(_countdownSubscription?.cancel());
     _countdownSubscription = null;
-    super.dispose();
+    super.onClose();
   }
 }

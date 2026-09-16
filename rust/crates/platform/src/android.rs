@@ -1,31 +1,27 @@
-//! Android implementation.
+//! Android 实现。
 //!
-//! Compiled only when `target_os = "android"`.
+//! 仅在 `target_os = "android"` 时编译。
 //!
-//! Android is the one platform where guessing is genuinely unsafe: the real
-//! location is the *app's own* data directory, which depends on the user id the
-//! package was installed under and on whether the app is in a work profile. The
-//! value below is the documented default for the primary user and is good enough
-//! for logging, but the Dart side should call `path_provider` when it needs a
-//! writable directory.
+//! Android 是唯一一个靠猜真的不安全的平台：真正的位置是 *应用自己的* 数据目录，
+//! 它取决于包安装时的用户 id，以及应用是否在工作资料（work profile）里。下面的
+//! 值是主用户、有文档记载的默认值，写日志够用，但 Dart 侧需要可写目录时应当调用
+//! `path_provider`。
 
 use std::path::PathBuf;
 
 use crate::PlatformFamily;
 
-/// See [`crate::NAME`].
+/// 见 [`crate::NAME`]。
 pub const NAME: &str = "android";
 
-/// See [`crate::FAMILY`].
+/// 见 [`crate::FAMILY`]。
 pub const FAMILY: PlatformFamily = PlatformFamily::Mobile;
 
-/// `/data/data/<app_id>/files`, the default app-private directory for the
-/// primary Android user.
+/// `/data/data/<app_id>/files`，Android 主用户默认的应用私有目录。
 ///
-/// `/data/data` is the traditional symlink to `/data/user/0`; both resolve to
-/// the same place on a normal device. Where `app_id` is not a valid package name
-/// (`com.example.app`), the caller gets a path that does not exist, which is the
-/// intended signal to fall back to `path_provider`.
+/// `/data/data` 是指向 `/data/user/0` 的传统符号链接；在正常设备上两者解析到同
+/// 一位置。当 `app_id` 不是合法包名（`com.example.app`）时，调用方拿到的是一个
+/// 并不存在的路径，这正是要回退到 `path_provider` 的预期信号。
 pub fn default_data_dir(app_id: &str) -> Option<PathBuf> {
     if app_id.is_empty() {
         return None;

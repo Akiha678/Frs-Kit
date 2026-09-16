@@ -5,59 +5,58 @@ import 'package:frs_kit/src/data/greeting_repository.dart';
 import 'package:frs_kit/src/data/platform_repository.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
 
-/// A [GreetingRepository] that never touches the native library.
+/// 一个永远不去碰原生库的 [GreetingRepository]。
 ///
-/// Widget tests cannot load a `.dylib`/`.so`/`.dll`, and they should not need to:
-/// what they verify is that the widgets react correctly to the answers the
-/// repository gives. This fake gives those answers on demand, including the ones
-/// that are hard to provoke against the real Rust code — a slow call that has not
-/// finished yet, or an error.
+/// Widget 测试加载不了 `.dylib`/`.so`/`.dll`，也不该需要加载：它们验证的是
+/// widget 对 repository 给出的答案反应是否正确。这个假实现按需给出这些答案，
+/// 包括对着真实 Rust 代码很难触发的那几种 —— 还没结束的慢调用，或者一个
+/// 错误。
 ///
-/// It mimics the *contract* of the real repository rather than its implementation:
-/// blank names are rejected exactly as `rust_flutter_core::domain` rejects them.
+/// 它模仿的是真实 repository 的*契约*而不是实现：空名字被拒绝的方式与
+/// `rust_flutter_core::domain` 完全一致。
 class FakeGreetingRepository implements GreetingRepository {
-  /// Creates a fake.
+  /// 创建假实现。
   FakeGreetingRepository({this.helloPrefix = 'Hello'}) {
     _countdown = StreamController<int>.broadcast(
-      // Mirrors the real contract: cancelling the Dart subscription is what stops
-      // the Rust loop, so the fake records the cancellation too.
+      // 照搬真实契约：停掉 Rust 那个循环靠的就是取消 Dart 侧的订阅，
+      // 所以假实现也把这次取消记下来。
       onCancel: () => countdownCancelled = true,
     );
   }
 
-  /// Prefix used by [hello], so a test can tell the fake's output apart.
+  /// [hello] 使用的前缀，让测试能把假实现的输出区分出来。
   final String helloPrefix;
 
-  /// Every name [hello] or [greet] was called with, in order.
+  /// [hello] 或 [greet] 被调用时传入过的每个名字，按顺序排列。
   final List<String> calls = <String>[];
 
-  /// When set, [delayedHello] returns this future instead of finishing at once.
+  /// 一旦赋值，[delayedHello] 就返回这个 future，而不是立刻完成。
   ///
-  /// Assign a [Completer] and complete it later to hold a call "in flight" while
-  /// the test inspects the UI.
+  /// 赋一个 [Completer] 之后再完成它，就能把一次调用「挂住」，
+  /// 让测试来得及检查此时的 UI。
   Completer<String>? delayedGate;
 
-  /// When set, [greet] fails with this failure.
+  /// 一旦赋值，[greet] 就以这个 failure 失败。
   BridgeFailure? greetFailure;
 
-  /// When set, [fibonacci] fails with this failure.
+  /// 一旦赋值，[fibonacci] 就以这个 failure 失败。
   BridgeFailure? fibonacciFailure;
 
   late final StreamController<int> _countdown;
 
-  /// Whether [countdown] has an active listener.
+  /// [countdown] 是否已有活跃的监听者。
   bool get isCountdownListened => _countdown.hasListener;
 
-  /// Whether [countdown]'s subscription has been cancelled.
+  /// [countdown] 的订阅是否已被取消。
   bool countdownCancelled = false;
 
-  /// Emits [value] on the countdown stream.
+  /// 在倒数流上发出 [value]。
   void emitCountdown(int value) => _countdown.add(value);
 
-  /// Closes the countdown stream, as Rust does when the countdown reaches 1.
+  /// 关闭倒数流，正如 Rust 在倒数走到 1 时所做的那样。
   Future<void> closeCountdown() => _countdown.close();
 
-  /// Fails the countdown stream.
+  /// 让倒数流以错误收场。
   void failCountdown(Object error) => _countdown.addError(error);
 
   @override
@@ -111,13 +110,13 @@ class FakeGreetingRepository implements GreetingRepository {
   Stream<int> countdown({required int count, required int intervalMs}) =>
       _countdown.stream;
 
-  /// Releases every resource the fake owns.
+  /// 释放假实现占用的所有资源。
   Future<void> dispose() => _countdown.close();
 }
 
-/// A [PlatformRepository] that reports a fixed platform.
+/// 一个上报固定平台的 [PlatformRepository]。
 class FakePlatformRepository implements PlatformRepository {
-  /// Creates a fake reporting [summaryValue].
+  /// 创建假实现，上报 [summaryValue]。
   const FakePlatformRepository({
     this.summaryValue = const PlatformSummary(
       name: 'fakeos',
@@ -127,7 +126,7 @@ class FakePlatformRepository implements PlatformRepository {
     ),
   });
 
-  /// What [summary] returns.
+  /// [summary] 的返回值。
   final PlatformSummary summaryValue;
 
   @override

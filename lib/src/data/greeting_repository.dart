@@ -3,64 +3,59 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import '../rust/bridge.dart' as rust;
 import 'failure.dart';
 
-/// Everything the app can ask the Rust side about greetings.
+/// 应用能就 greeting 向 Rust 端询问的一切。
 ///
-/// This is the boundary layer. It owns three jobs:
+/// 这是边界层，负责三件事：
 ///
-/// * it is the only place that calls into the generated bindings, so a change to
-///   the Rust API ripples through one file;
-/// * it converts bridge exceptions into [BridgeFailure];
-/// * it hides streams' lifetimes behind an ordinary `Stream`.
+/// * 它是唯一调用生成绑定的地方，所以 Rust API 的改动只会在一个文件里激起涟漪；
+/// * 把 bridge 异常转换成 [BridgeFailure]；
+/// * 把流的生命周期藏在普通的 `Stream` 后面。
 ///
-/// The generated types (`rust.Greeting`, `rust.GreetingStyle`) are used as the
-/// app's models on purpose: they are immutable, value-equal data classes, so a
-/// second hand-written copy would only add mapping code. If the UI ever needs to
-/// outlive a bridge change, add the mapping *here* — that is what this layer is
-/// for.
+/// 生成类型（`rust.Greeting`、`rust.GreetingStyle`）被刻意当作应用的模型使用：
+/// 它们是不可变、按值相等的数据类，再手写一份拷贝只会多出一堆映射代码。如果哪天 UI
+/// 需要比 bridge 的改动活得更久，把映射加在*这里* —— 这一层就是干这个的。
 ///
-/// The bridge import is prefixed (`rust.`) so that the FFI boundary is visible at
-/// every call site, and so the `hello` method below cannot accidentally recurse
-/// into the `hello` function it wraps.
+/// bridge 的导入带前缀（`rust.`），这样 FFI 边界在每个调用点都看得见，下面那个
+/// `hello` 方法也就不会不小心递归进它自己包装的 `hello` 函数。
 class GreetingRepository {
-  /// Creates a repository. Stateless, hence `const`.
+  /// 创建 repository。无状态，所以是 `const`。
   const GreetingRepository();
 
-  /// The synchronous round-trip: no `Future`, no isolate hop.
+  /// 同步往返：没有 `Future`，也不跳 isolate。
   ///
-  /// Cheap enough to call during `build`, which is exactly what the UI does to
-  /// show a live preview as the user types.
+  /// 足够廉价，可以在 `build` 期间调用 —— UI 正是这么做的，用来在用户输入时给出
+  /// 实时预览。
   String hello(String name) => rust.hello(name: name);
 
-  /// Validates [name] in Rust and renders it in [style].
+  /// 在 Rust 里校验 [name]，并按 [style] 渲染。
   ///
-  /// Throws [BridgeFailure] when the name is blank or too long.
+  /// 名字为空或过长时抛出 [BridgeFailure]。
   Future<rust.Greeting> greet({
     required String name,
     required rust.GreetingStyle style,
   }) => _guard(() => rust.greet(name: name, style: style));
 
-  /// Greets [name] after waiting [delayMs] milliseconds.
+  /// 等 [delayMs] 毫秒之后再问候 [name]。
   ///
-  /// The wait happens on a Rust worker thread, so the Flutter UI keeps painting
-  /// while this future is pending: nothing in this call can stutter a frame.
+  /// 等待发生在 Rust 的 worker 线程上，因此这个 future 挂起期间 Flutter UI 仍在持续
+  /// 绘制：这次调用不会让任何一帧卡顿。
   Future<String> delayedHello({required String name, required int delayMs}) =>
       _guard(() => rust.delayedHello(name: name, delayMs: delayMs));
 
-  /// The [n]-th Fibonacci number, computed off the async runtime.
+  /// 第 [n] 个斐波那契数，在异步 runtime 之外计算。
   ///
-  /// Returns a [BigInt] because Rust's `u64` does not fit Dart's fixed-size
-  /// `int` on the web, where integers are doubles. See `docs/architecture.md`.
+  /// 返回 [BigInt]，因为在 web 上 Rust 的 `u64` 装不进 Dart 定长的 `int` —— 那里的
+  /// 整数是 double。参见 `docs/architecture.md`。
   Future<BigInt> fibonacci(int n) => _guard(() => rust.fibonacci(n: n));
 
-  /// Counts down from [count] to `1`, one value every [intervalMs].
+  /// 从 [count] 倒数到 `1`，每隔 [intervalMs] 产出一个值。
   ///
-  /// The stream closes when the countdown finishes. Cancelling the subscription
-  /// stops the Rust loop as well, so an abandoned stream does not keep a worker
-  /// thread alive: see `rust/src/api/stream_demo.rs`.
+  /// 倒数结束时流关闭。取消订阅也会一并停掉 Rust 侧的循环，因此被丢弃的流不会让
+  /// worker 线程继续活着：参见 `rust/src/api/stream_demo.rs`。
   Stream<int> countdown({required int count, required int intervalMs}) =>
       rust.countdown(count: count, intervalMs: intervalMs);
 
-  /// Runs [call], converting any bridge exception into a [BridgeFailure].
+  /// 执行 [call]，把任何 bridge 异常转换成 [BridgeFailure]。
   static Future<T> _guard<T>(Future<T> Function() call) async {
     try {
       return await call();

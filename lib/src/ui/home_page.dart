@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../app_info.dart';
-import '../state/state_scope.dart';
+import '../state/home_state.dart';
 import 'widgets/async_card.dart';
 import 'widgets/cpu_card.dart';
 import 'widgets/greeting_card.dart';
 import 'widgets/platform_card.dart';
 import 'widgets/stream_card.dart';
 
-/// The home page: one panel per round-trip between Dart and Rust.
+/// 首页：Dart 与 Rust 之间的每一次往返对应一个面板。
 ///
-/// The page itself holds no state. It reads [HomeState] from the scope above it
-/// and rebuilds when that notifier fires, which keeps the layout declarative and
-/// makes the whole page testable with fake repositories.
+/// 页面本身不持有状态，也不订阅任何东西。每个面板自己从 Get 容器取出 controller，
+/// 并用 `Obx` 包住会变化的部分，因此某个面板的状态变化不会重建另外三个。
 class HomePage extends StatelessWidget {
-  /// Creates the page.
+  /// 创建页面。
   const HomePage({super.key});
 
   @override
@@ -25,7 +25,9 @@ class HomePage extends StatelessWidget {
         actions: <Widget>[
           IconButton(
             tooltip: 'Re-read host facts from Rust',
-            onPressed: () => HomeStateScope.read(context).loadSummary(),
+            // 不需要 `BuildContext`：controller 是通过容器拿到的，这也是这类回调
+            // 比用 InheritedWidget 时更短的原因。
+            onPressed: () => Get.find<HomeState>().loadSummary(),
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -33,8 +35,7 @@ class HomePage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            // Long lines are hard to read, and a phone-sized column keeps the
-            // desktop window from stretching the panels across the screen.
+            // 行太长不好读，而手机宽度的栏位可以避免桌面窗口把面板拉得横跨全屏。
             constraints: const BoxConstraints(maxWidth: 720),
             child: ListView(
               padding: const EdgeInsets.all(16),

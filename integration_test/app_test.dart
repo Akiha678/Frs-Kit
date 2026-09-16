@@ -3,15 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frs_kit/src/app.dart';
 import 'package:frs_kit/src/data/greeting_repository.dart';
 import 'package:frs_kit/src/rust/bridge.dart';
+import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 
-/// The whole app, running the real widgets against the real Rust library.
+/// 整个应用跑在真实 widget 上，对着真实的 Rust 库。
 ///
-/// `test/app_test.dart` proves the same interactions with fakes. This file exists
-/// for the gap between them: a fake cannot tell you whether the shared library on
-/// disk matches the generated bindings, whether the loader finds it inside the app
-/// bundle, or whether a domain error still reads the same after crossing FFI. Run
-/// it on each target you ship:
+/// `test/app_test.dart` 用假实现证明了同样的交互。这个文件是为了填两者之间的
+/// 空缺：假实现说不清磁盘上的共享库是否与生成的 binding 匹配，说不清 loader
+/// 能否在 app bundle 里找到它，也说不清一个 domain 错误跨过 FFI 之后是否还是
+/// 原话。每个要发布的目标上都要跑一遍：
 ///
 /// ```sh
 /// flutter test integration_test/app_test.dart -d macos
@@ -21,13 +21,20 @@ void main() {
 
   setUpAll(initRustBridge);
 
-  /// Pumps the real app on a surface tall enough to hold every panel.
+  setUp(() => Get.testMode = true);
+
+  // Get 容器是全局的，活得比 widget 树还久。不重置的话，下一个测试虽然 pump
+  // 出了新应用，`Get.find<HomeState>()` 却会把上一个测试的 controller 交回来 ——
+  // 连同它输入过的名字和选中的样式。于是第一个之后的每个测试都在对着陈旧状态
+  // 做断言，这一行出现之前，这里有两个测试正是这么挂掉的。
+  tearDown(Get.reset);
+
+  /// 在一块高到放得下所有面板的画布上 pump 出真实应用。
   ///
-  /// A phone-sized window is shorter than this page, and a `ListView` neither
-  /// builds nor hit-tests what is below the fold. Scrolling between measuring a
-  /// widget and tapping it is a reliable source of flakiness, so the tests simply
-  /// give themselves the room the page needs. `setSurfaceSize(null)` in the
-  /// teardown restores the device's own window.
+  /// 手机尺寸的窗口比这个页面矮，而 `ListView` 对折叠线以下的内容既不构建
+  /// 也不做命中测试。在测量 widget 和点击它之间去滚动，是测试不稳定的可靠
+  /// 来源，所以这些测试干脆给自己留出页面需要的空间。teardown 里的
+  /// `setSurfaceSize(null)` 会把设备自己的窗口还回来。
   Future<void> pumpRealApp(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1000, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -36,11 +43,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Brings [finder] on screen, scrolling the panel list if it is below the fold.
+  /// 把 [finder] 带到屏幕上，若在折叠线以下就滚动面板列表。
   ///
-  /// Kept as a safety net for smaller surfaces. `pumpAndSettle` is avoided here:
-  /// several panels animate a spinner while a call is pending, and settling would
-  /// never finish.
+  /// 留着它是给更小的画布当保险。这里刻意避开 `pumpAndSettle`：调用挂起时
+  /// 有好几个面板在跑 spinner 动画，settle 永远结束不了。
   Future<void> reveal(WidgetTester tester, Finder finder) async {
     if (finder.evaluate().isEmpty) {
       await tester.scrollUntilVisible(
@@ -53,11 +59,10 @@ void main() {
     await tester.pump();
   }
 
-  /// Pumps real frames until [finder] matches, or fails after [timeout].
+  /// 一直 pump 真实帧，直到 [finder] 命中；超过 [timeout] 就失败。
   ///
-  /// A live binding cannot `pumpAndSettle` its way through work that schedules no
-  /// frames, so waiting for a visible outcome is the reliable way to await a real
-  /// Rust call.
+  /// 活着的 binding 没法靠 `pumpAndSettle` 趟过不调度任何帧的工作，所以要等
+  /// 一次真实的 Rust 调用，可靠的办法是等一个看得见的结果出现。
   Future<void> pumpUntilFound(
     WidgetTester tester,
     Finder finder, {
@@ -76,8 +81,8 @@ void main() {
   ) async {
     await pumpRealApp(tester);
 
-    // The value comes from `rust/src/api/platform.rs`, so finding it on screen
-    // means the library loaded, answered, and agreed with Dart about the platform.
+    // 这个值来自 `rust/src/api/platform.rs`，所以能在屏幕上找到它，就说明库
+    // 加载成功了、答复了，而且和 Dart 对平台的判断一致。
     expect(find.text(platformName()), findsWidgets);
     expect(find.text('library is current'), findsOneWidget);
   });
@@ -102,8 +107,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Ada');
 
-    // Each control is revealed before it is tapped: on a real window the cards
-    // below the fold are neither built nor hit-testable.
+    // 每个控件都先 reveal 再点：在真实窗口里，折叠线以下的卡片既不会被构建，
+    // 也命中不了。
     await reveal(tester, find.text('formal'));
     await tester.tap(find.text('formal'));
     await tester.pump();
@@ -141,8 +146,8 @@ void main() {
     await tester.tap(find.text('Run delayed call'));
     await tester.pump();
 
-    // The panel's tick counter only moves if the isolate stayed free while Rust
-    // slept, which is the claim this test exists to check.
+    // 只有当 Rust 睡着期间 isolate 一直空闲，面板上的 tick 计数才会往前走 ——
+    // 这个测试存在的意义就是核对这一点。
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('0'), findsNothing);
 
@@ -156,7 +161,7 @@ void main() {
     await reveal(tester, find.text('Stop'));
 
     await tester.tap(find.text('Start'));
-    // countdown(count: 5, intervalMs: 300) starts at 5.
+    // countdown(count: 5, intervalMs: 300) 从 5 开始。
     await pumpUntilFound(tester, find.widgetWithText(Chip, '5'));
 
     expect(find.widgetWithText(Chip, '5'), findsOneWidget);
@@ -175,7 +180,7 @@ void main() {
 
     await tester.tap(find.text('Compute in Rust'));
 
-    // F(40) = 102334155, rendered through BigInt.toString().
+    // F(40) = 102334155，经 BigInt.toString() 渲染出来。
     await pumpUntilFound(tester, find.text('102334155'));
     expect(find.text('102334155'), findsOneWidget);
   });

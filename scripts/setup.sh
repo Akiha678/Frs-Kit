@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 #
-# Reports whether the tools this scaffold needs are installed, then does the two
-# things a fresh checkout requires: fetch Dart packages and build the native
-# library.
+# 报告这个脚手架需要的工具是否都已安装，然后完成全新检出所必需的两件事：
+# 获取 Dart 依赖包并构建原生库。
 #
-# Safe to re-run: every step is idempotent, and a missing optional tool is reported
-# rather than fatal.
+# 可以安全地重复运行：每一步都是幂等的，缺少可选工具只会被报告出来，
+# 而不是直接失败。
 #
-# Usage:
-#   scripts/setup.sh            # check, then pub get + cargo build
-#   scripts/setup.sh --check    # check only, change nothing
+# 用法：
+#   scripts/setup.sh            # 先检查，然后执行 pub get + cargo build
+#   scripts/setup.sh --check    # 只检查，不做任何改动
 
 set -euo pipefail
 
@@ -23,7 +22,7 @@ fi
 
 missing_required=0
 
-# require <command> <version-args...> — a tool we cannot work without.
+# require <command> <version-args...> — 没有它就无法工作的工具。
 require() {
   local cmd="$1"
   shift
@@ -35,7 +34,7 @@ require() {
   fi
 }
 
-# optional <command> <version-args...> — nice to have, with a note on where it matters.
+# optional <command> <version-args...> — 有则更好，并说明它在何处起作用。
 optional() {
   local cmd="$1" note="$2"
   shift 2

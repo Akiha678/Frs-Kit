@@ -37,10 +37,12 @@ through to `unsupported.rs`, which reports the real target name
 ```text
 lib/main.dart
   ├─ initRustBridge()             lib/src/rust/bridge.dart
-  └─ FrsKitApp                    lib/src/app.dart
-       └─ HomeStateScope          lib/src/state/state_scope.dart
-            └─ HomePage           lib/src/ui/home_page.dart
-                 └─ HomeState     lib/src/state/home_state.dart
+  └─ FrsKitApp                    lib/src/app.dart      (GetMaterialApp)
+       ├─ HomeBinding             lib/src/state/home_binding.dart
+       │    └─ registers GreetingRepository, PlatformRepository, HomeState
+       └─ HomePage                lib/src/ui/home_page.dart
+            └─ panels `Get.find<HomeState>()`, read Rx inside `Obx`
+                 └─ HomeState     lib/src/state/home_state.dart  (GetxController)
                       ├─ GreetingRepository / PlatformRepository  lib/src/data/
                       └─ lib/src/rust/**   generated + bridge.dart
                            └─ rust/src/api/**
@@ -168,14 +170,35 @@ instead, at the cost of precision on the web; this project leaves it unset.
 
 ## Where state lives
 
-There is no state-management package. `HomeState extends ChangeNotifier` holds
-everything the home page renders — host facts, the greeting form, the delayed call and
-its tick counter, the countdown buffer, the Fibonacci input and result — and
-`HomeStateScope extends InheritedNotifier<HomeState>` publishes it. `of(context)`
-subscribes and belongs in `build`; `read(context)` does not and belongs in callbacks.
+State management and dependency injection are GetX. `HomeState extends GetxController`
+holds everything the home page renders — host facts, the greeting form, the delayed call
+and its tick counter, the countdown buffer, the Fibonacci input and result — as `Rx`
+values (`RxString`, `RxBool`, `Rxn<T>`, `RxList<int>`), and the panels wrap the parts
+that change in `Obx`.
 
-`FrsKitApp` creates the state in its `State` object, calls `loadSummary()` from
-`initState` — it is synchronous, so the first build already shows the host facts — and
-disposes it. The two repositories are constructor parameters defaulting to the real
-implementations, which is what lets widget tests drive the real widget tree without a
-native library; `HomeState._notify()` guards against notifying after dispose.
+The reason to prefer `Rx` over a single listenable object is rebuild scope: an `Obx`
+subscribes only to the `Rx` values read inside it. Typing in the name field rebuilds the
+synchronous preview and nothing else — not the chips, not the countdown panel, not the
+CPU panel. That is also why `instantHello` is a plain getter over `state.name`: reading
+it inside an `Obx` is what subscribes that `Obx` to the name.
+
+`HomeBinding` replaces the `InheritedNotifier` scope the scaffold used to carry. It is
+passed to `GetMaterialApp.initialBinding`, so it runs before the first route is built,
+and it `lazyPut`s the two repositories and the controller with `fenix: true` — GetX
+deletes lazily-created instances when the route that used them goes away, and `fenix`
+rebuilds the registration instead of returning a deleted controller. Widgets and
+callbacks reach state with `Get.find<HomeState>()`, which needs no `BuildContext`.
+
+`FrsKitApp` is therefore a `StatelessWidget`: the container owns the controller's
+lifetime. `HomeState.onInit()` reads the host facts — synchronous and cheap, so the first
+build already shows them — and `onClose()` cancels the busy ticker and the countdown
+subscription. `_closed` guards the async callbacks that can still land afterwards,
+because assigning to an `Rx` after teardown is an error.
+
+Two GetX behaviours the tests pin down, both easy to trip over:
+
+* the container is **global**, so both test layers call `Get.reset()` in their teardown.
+  Without it the next test pumps a fresh app but `Get.find` returns the previous test's
+  controller, complete with the name it typed;
+* `Rx` always publishes the **first** write, even when it equals the initial value
+  (`firstRebuild`). Only later writes are de-duplicated.

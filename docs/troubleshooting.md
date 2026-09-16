@@ -130,8 +130,8 @@ in changing the integration backend), not in this project's own code.
 **Cause** — expected behaviour, not a bug. `greet` in `rust/src/api/hello.rs` calls
 `rust_flutter_core::domain::greet`, which trims the name and rejects what is left if it is
 empty or longer than `MAX_RECIPIENT_LEN`. The `CoreError::InvalidInput` message travels
-through `anyhow` into a `BridgeFailure`, which `HomeState` keeps as `greetingError` for the
-UI to render rather than throwing.
+through `anyhow` into a `BridgeFailure`, which `HomeState` keeps in `greetingError` (an
+`RxnString`) for the UI to render rather than throwing.
 
 **Fix** — none: type a name, or pick a shorter one. The integration test asserts these
 messages and the widget test asserts `tester.takeException()` is null, so an error on
