@@ -120,7 +120,9 @@ class _ErrorText extends StatelessWidget {
       children: <Widget>[
         Icon(Icons.error_outline, size: 16, color: scheme.error),
         const SizedBox(width: 6),
-        Expanded(child: Text(message, style: TextStyle(color: scheme.error))),
+        Expanded(
+          child: Text(message, style: TextStyle(color: scheme.error)),
+        ),
       ],
     );
   }

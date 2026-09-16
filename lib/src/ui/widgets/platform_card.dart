@@ -68,7 +68,10 @@ class PlatformCard extends StatelessWidget {
             const SizedBox(height: 4),
             ValueLine(label: 'family', value: summary.family.name),
             const SizedBox(height: 4),
-            ValueLine(label: 'desktop', value: summary.isDesktop ? 'yes' : 'no'),
+            ValueLine(
+              label: 'desktop',
+              value: summary.isDesktop ? 'yes' : 'no',
+            ),
             const SizedBox(height: 4),
             ValueLine(
               label: 'data dir',

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
+/// 首页每个演示面板共用的外壳。
+///
+/// 每块面板都在讲一次 Dart 与 Rust 之间的往返，因此都需要同样的「标题 / 说明 /
+/// 主体」版式。共用一个外壳能让每块面板短到一屏读完——这正是脚手架的意义。
 class DemoCard extends StatelessWidget {
   /// 创建一个面板。
   const DemoCard({
@@ -12,6 +16,7 @@ class DemoCard extends StatelessWidget {
     super.key,
   });
 
+  /// 面板标题，通常写明它演示的那个 Rust 函数。
   final String title;
 
   /// 一两句话说明 Rust 侧在做什么，显示在标题下方。

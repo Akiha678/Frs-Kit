@@ -5,7 +5,13 @@ import '../../state/home_state.dart';
 import '../theme.dart';
 import 'demo_card.dart';
 
+/// 往返之二：Rust 的 `async fn` 藏在 Dart `Future` 后面。
+///
+/// 这块面板是为了让一个论断可被检验：Rust 睡眠期间，Flutter 仍在继续绘制。
+/// tick 计数器在每个 [HomeState.busyTickInterval] 递增一次，且只在 future
+/// 未完成期间递增，所以一个接近 `delay / 50` 的数字，就说明没有任何东西被阻塞。
 class AsyncCard extends StatelessWidget {
+  /// 创建面板。
   const AsyncCard({super.key});
 
   @override

@@ -109,7 +109,10 @@ class _HelloRustExampleState extends State<HelloRustExample> {
                 const SizedBox(height: 24),
                 Text('sync', style: theme.textTheme.labelMedium),
                 // 没有 Future，也不用 await：值已经在这儿了。
-                SelectableText(_greetings.hello(_name.text), style: kValueTextStyle),
+                SelectableText(
+                  _greetings.hello(_name.text),
+                  style: kValueTextStyle,
+                ),
                 const SizedBox(height: 16),
                 Text('async', style: theme.textTheme.labelMedium),
                 SelectableText(
@@ -118,7 +121,10 @@ class _HelloRustExampleState extends State<HelloRustExample> {
                 ),
                 if (_error case final String message) ...<Widget>[
                   const SizedBox(height: 12),
-                  Text(message, style: TextStyle(color: theme.colorScheme.error)),
+                  Text(
+                    message,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
                 ],
                 const SizedBox(height: 24),
                 FilledButton(

@@ -72,8 +72,6 @@ class HomeState extends GetxController {
     }
   }
 
-  // ------------------------------------------------------------- greeting --
-
   /// 输入框当前的值。
   final RxString name = 'Flutter'.obs;
 

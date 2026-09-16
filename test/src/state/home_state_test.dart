@@ -83,7 +83,10 @@ void main() {
       await state.submitGreeting();
 
       expect(state.greeting.value, isNull);
-      expect(state.greetingError.value, 'invalid input: name must not be empty');
+      expect(
+        state.greetingError.value,
+        'invalid input: name must not be empty',
+      );
     });
 
     test('a second submit is ignored while one is in flight', () async {
@@ -114,27 +117,30 @@ void main() {
       expect(state.greetingError.value, isNull);
     });
 
-    test('an Rx notifies on change and skips repeats after the first write', () {
-      final HomeState state = buildState();
-      addTearDown(() => disposeState(state));
+    test(
+      'an Rx notifies on change and skips repeats after the first write',
+      () {
+        final HomeState state = buildState();
+        addTearDown(() => disposeState(state));
 
-      int notifications = 0;
-      state.name.listen((_) => notifications++);
+        int notifications = 0;
+        state.name.listen((_) => notifications++);
 
-      // GetX 对第一次赋值一定会通知，即使赋的值和字段初值相同：
-      // `_RxImpl.firstRebuild` 把它当作「公布初始值」来处理。换成手写的
-      // setter，这一次通知就会被吞掉。
-      state.name.value = 'Flutter';
-      expect(notifications, 1);
+        // GetX 对第一次赋值一定会通知，即使赋的值和字段初值相同：
+        // `_RxImpl.firstRebuild` 把它当作「公布初始值」来处理。换成手写的
+        // setter，这一次通知就会被吞掉。
+        state.name.value = 'Flutter';
+        expect(notifications, 1);
 
-      // 之后每次写入相同的值都是空操作，而这正是过去那个手写的
-      // `if (value == _name) return;` 守卫负责的事。
-      state.name.value = 'Flutter';
-      expect(notifications, 1);
+        // 之后每次写入相同的值都是空操作，而这正是过去那个手写的
+        // `if (value == _name) return;` 守卫负责的事。
+        state.name.value = 'Flutter';
+        expect(notifications, 1);
 
-      state.name.value = 'Ada';
-      expect(notifications, 2);
-    });
+        state.name.value = 'Ada';
+        expect(notifications, 2);
+      },
+    );
   });
 
   group('async call', () {

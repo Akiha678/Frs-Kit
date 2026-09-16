@@ -100,7 +100,10 @@ class _StreamDemoExampleState extends State<StreamDemoExample> {
                 ),
                 const SizedBox(height: 16),
                 if (_error case final String message)
-                  Text(message, style: TextStyle(color: theme.colorScheme.error))
+                  Text(
+                    message,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  )
                 else if (_values.isEmpty)
                   const Text('no values yet')
                 else

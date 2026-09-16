@@ -5,7 +5,13 @@ import '../../state/home_state.dart';
 import '../theme.dart';
 import 'demo_card.dart';
 
+/// 往返之二的下半场：CPU 密集型工作，绝不能阻塞 runtime。
+///
+/// `fibonacci` 跑在 blocking pool 上而不是异步 runtime 上，这就是「一次慢调用」
+/// 与「所有 bridge 调用都堵在它后面」的区别。上报的耗时让代价变得具体，而
+/// `n = 93` 是 Rust 的 `u64` 刚好装不下的边界——再多一个，调用会失败而不是溢出。
 class CpuCard extends StatelessWidget {
+  /// 创建面板。
   const CpuCard({super.key});
 
   @override

@@ -34,6 +34,6 @@ export 'frb_generated.dart' show RustLib;
 /// `kDefaultExternalLibraryLoaderConfig` 里 —— 所以只跑 debug 的 `cargo build`
 /// 不够，要用 `just build`，它构建的正是加载器所期望的 release profile。
 ///
-/// 库缺失、由不同源码构建、或 codegen/runtime 版本不匹配时都会抛出。`main` 捕获
-/// 它并显示原因，而不是留下一片空白窗口。
+/// 库缺失、由不同源码构建、或 codegen/runtime 版本不匹配时都会抛出。`main`
+/// 捕获它并显示原因，而不是留下一片空白窗口。
 Future<void> initRustBridge() => RustLib.init();
