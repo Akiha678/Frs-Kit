@@ -59,30 +59,7 @@ macOS 桌面端已实测跑通（含真机端到端测试）；Android、iOS、W
 | 代码规范 | cargo fmt / clippy / flutter_lints + 严格 lint | `just check` 一次跑完，clippy 警告即错误 |
 | 版本锁定 | rustup + fvm（可选） | `rust-toolchain.toml` 与 `.fvmrc` 分别锁定两侧工具链 |
 
-## 🔁 四种往返
-
-| 往返类型 | Rust | Dart | 演示了什么 |
-| --- | --- | --- | --- |
-| 值、结构体、枚举 | `rust/src/api/hello.rs` | `Future<Greeting> greet(...)` | `#[frb(sync)]` 与 `Future` 的区别、传输层 DTO、领域校验 |
-| 异步工作 | `rust/src/api/async_demo.rs` | `Future<String>`、`Future<BigInt>` | 不占用 UI isolate、把 CPU 密集任务挪到 blocking pool |
-| 流 | `rust/src/api/stream_demo.rs` | `Stream<int> countdown(...)` | 由 Rust 推值，取消订阅能真正传回 Rust |
-| 宿主信息 | `rust/src/api/platform.rs` | `PlatformSummary platformSummary(...)` | 廉价的同步调用、识别出「原生库是旧的」 |
-
-应用首页就是这四个面板，测试就是证据：
-
-- `cargo test` —— 30 个单元测试（领域 crate 15 个、平台 crate 7 个、桥接 crate 8 个）加 2 个文档测试
-- `flutter test` —— 32 个测试：状态机单测 + 整套 UI 的组件测试，全部跑在假实现上，约两秒完成
-- `just test-e2e` —— 22 个测试：在真机上加载真实原生库，覆盖真实校验消息、真实耗时、`u64` 边界与流的取消
-
 ## 📁 项目架构
-
-从 UI 到 Rust 只有单向一条路：
-
-```text
-ui -> state -> data -> rust/（生成代码） -> rust/src/api -> crates/core, crates/platform
-```
-
-`rust/src/api/**` 就是那道缝。它下面全是不知道 Dart 存在的普通 Rust；它上面全是不知道 FFI 存在的普通 Flutter。为什么这么切、不这么切会坏在哪，`docs/architecture.md` 里有说明。
 
 ```text
 lib/
@@ -117,25 +94,11 @@ justfile                       # 所有命令一张表：just
 
 ## 🚀 快速开始
 
-### 环境要求
-
-- **Flutter** 3.47.0（`.fvmrc` 已锁定；`fvm` 可选，没装的话脚本会自动跳过）
-- **Rust**（经 rustup 安装）——`rust-toolchain.toml` 锁定 stable 并带 `rustfmt`、`clippy`，rustup 会在首次进入 `rust/` 时自动装好
-- **flutter_rust_bridge_codegen**，版本必须与 `pubspec.yaml` 完全一致：
-
-  ```bash
-  cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
-  ```
-
-- **just**（[安装说明](https://github.com/casey/just#installation)）——不装也行，照着 `justfile` 手敲命令即可
-
-`scripts/setup.sh --check`（即 `just doctor`）会报告装了什么、缺什么。代码生成器、Dart 包、Rust crate 三者的版本不一致会导致启动时崩溃，所以 `just check` 会校验四处版本是否一致。
-
 ### 安装与运行
 
 ```bash
-just setup     # 拉取 Dart 依赖并构建原生库（flutter pub get + cargo build --release）
-just run       # 构建后在 macOS 上启动，换平台用 just run device=chrome
+just setup
+just run
 ```
 
 不想装 `just` 的话，等价于：
@@ -143,27 +106,25 @@ just run       # 构建后在 macOS 上启动，换平台用 just run device=chr
 ```bash
 flutter pub get
 cargo build --release --manifest-path rust/Cargo.toml
-flutter run -d macos
+flutter run
 ```
 
 ### 常用命令
 
 | 命令 | 作用 |
 | --- | --- |
-| `just` | 列出全部配方 |
+| `just` | 列出全部命令 |
 | `just setup` | `pub get` + 以 release 构建原生库 |
 | `just doctor` | 报告工具链与版本一致性 |
 | `just gen` | 改完 Rust API 后重新生成 Dart 绑定 |
 | `just gen-watch` | 同上，但持续监听自动重跑 |
-| `just build` | `cargo build --release`——加载器要找的正是这个 profile |
-| `just run` | 先构建，再 `flutter run -d macos`（用 `device=chrome` 换设备） |
+| `just build` | `cargo build --release` |
+| `just run` | `flutter run` |
 | `just check` | 版本一致性、`cargo fmt --check`、`cargo clippy -D warnings`、`flutter analyze` |
-| `just test` | Dart 单元与组件测试（快，不需要原生库） |
+| `just test` | Dart 单元与组件测试 |
 | `just test-e2e` | 真机上的真实桥接测试，每个文件单独跑一次 |
 | `just test-all` | 以上全部 |
 | `just versions` | 打印 flutter_rust_bridge 版本在各处的取值 |
-
-`just build` 不是可有可无的装饰：生成的 Dart 里写死了加载路径 `rust/target/release/`，只跑 `cargo build`（debug）它根本看不见。库缺失时应用会在界面上直接说明原因，而不是给你一个白屏。
 
 ### 代码生成
 
@@ -174,7 +135,7 @@ just gen          # 等价于 flutter_rust_bridge_codegen generate
 just gen-watch    # 持续监听，边改边生成
 ```
 
-`rust/src/frb_generated.rs`、`lib/src/rust/**` 都是生成产物，**已故意纳入版本管理**，方便在 review 里看到边界变更；但永远不要手改——下一次生成会覆盖。
+`rust/src/frb_generated.rs`、`lib/src/rust/**` 都是生成产物
 
 ### 质量检查与测试
 
@@ -190,23 +151,12 @@ just test-all   # 以上全部
 
 ### 运行示例
 
-三个阶段各有一个小应用，只讲一件事：
-
-```bash
-just build
-flutter run -t examples/hello_rust/main.dart  -d macos   # 同步 vs 异步
-flutter run -t examples/async_demo/main.dart  -d macos   # 等待但不卡界面
-flutter run -t examples/stream_demo/main.dart -d macos   # 流与取消
-```
-
-## ➕ 新增一个接口
+## ➕ 新增接口
 
 1. 在 `rust/src/api/`（或该目录下的新模块）里写一个 `pub fn`
 2. `just gen` —— Dart 绑定会出现在 `lib/src/rust/api/` 下
 3. 在 `lib/src/data/` 里调用它，把失败转成 `BridgeFailure`，再由状态层持有
 4. 快速回路用 `just test`，要真话就用 `just test-e2e`
-
-除了标注 `#[frb(sync)]` 的函数，其余函数在 Dart 侧都是异步的。`#[frb(sync)]` 会跑在调用方 isolate 上，只适合「便宜到不会卡界面」的调用（拼字符串、读常量）；文件、网络、睡眠、等锁一律不许。`docs/development.md` 里有一个完整的端到端示例（含如何为它补测试）。
 
 ## 📦 打包构建
 
@@ -227,13 +177,6 @@ flutter build appbundle --release
 flutter build windows --release
 flutter build linux --release
 ```
-
-几个必须知道的前提：
-
-- **首次构建慢**：cargokit 会为每个目标架构编译 Rust，并经 rustup 安装缺失的 target
-- **平台限制**：Windows / Linux 应用需在对应系统构建，iOS / macOS 需在 macOS 上配合 Xcode 构建
-- **Web 暂未接通**：还需要 `wasm-pack` 与 `flutter_rust_bridge_codegen build-web` 这一步，`justfile` 里没有包装，本仓库未验证
-- 只想在**应用包之外**运行（纯 Dart VM 场景）时，加载器找的是 `rust/target/release/librust_lib_frs_kit.{dylib,so,dll}`，这由 `just build` 产出
 
 ## 📚 说明文档
 
@@ -256,5 +199,3 @@ flutter build linux --release
 - **代码贡献**：完善功能实现、补充示例或修复问题
 - **文档优化**：完善使用说明、架构说明与排错条目
 - **测试协助**：在 macOS / Windows / Linux / Android / iOS 上验证行为，尤其是首次构建
-
-提交前请确保 `just check` 与 `just test` 全绿；改了 Rust API 记得跑 `just gen`，并同步补上 `test/` 的假实现与 `integration_test/` 的端到端用例。生成代码（`rust/src/frb_generated.rs`、`lib/src/rust/**`）请勿手工修改。

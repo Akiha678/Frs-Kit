@@ -59,30 +59,7 @@ macOS desktop is verified end to end, including on-device tests. The native proj
 | Code quality | cargo fmt / clippy / flutter_lints + strict lints | All in `just check`; clippy warnings are errors |
 | Toolchain pinning | rustup + fvm (optional) | `rust-toolchain.toml` and `.fvmrc` pin each side |
 
-## 🔁 The four round-trips
-
-| Round-trip | Rust | Dart | Demonstrates |
-| --- | --- | --- | --- |
-| Values, structs, enums | `rust/src/api/hello.rs` | `Future<Greeting> greet(...)` | `#[frb(sync)]` vs a `Future`, wire DTOs, domain validation |
-| Async work | `rust/src/api/async_demo.rs` | `Future<String>`, `Future<BigInt>` | staying off the UI isolate, moving CPU-bound work to the blocking pool |
-| Streams | `rust/src/api/stream_demo.rs` | `Stream<int> countdown(...)` | pushing values from Rust, cancellation that reaches back |
-| Host facts | `rust/src/api/platform.rs` | `PlatformSummary platformSummary(...)` | cheap synchronous calls, catching a stale native library |
-
-The home page is those four panels, and the tests are the evidence:
-
-- `cargo test` — 30 unit tests (15 in the domain crate, 7 in the platform crate, 8 in the bridge crate) plus 2 doc-tests
-- `flutter test` — 32 tests: unit tests for the state machine and widget tests for the whole UI, all against fakes, in about two seconds
-- `just test-e2e` — 22 tests: the real native library on a real device, covering real validation messages, real timings, the `u64` boundary and stream cancellation
-
 ## 📁 Architecture
-
-The path from the UI to Rust runs one way only:
-
-```text
-ui -> state -> data -> rust/ (generated) -> rust/src/api -> crates/core, crates/platform
-```
-
-`rust/src/api/**` is the seam. Below it is ordinary Rust that knows nothing about Dart; above it is ordinary Flutter that knows nothing about FFI. `docs/architecture.md` explains why, and what breaks when you ignore it.
 
 ```text
 lib/
@@ -117,25 +94,11 @@ justfile                       # every command in one list: just
 
 ## 🚀 Quick start
 
-### Requirements
-
-- **Flutter** 3.47.0 (pinned in `.fvmrc`; `fvm` is optional and skipped automatically when absent)
-- **Rust** via rustup — `rust-toolchain.toml` pins stable with `rustfmt` and `clippy`, which rustup installs on first use inside `rust/`
-- **flutter_rust_bridge_codegen**, at exactly the version in `pubspec.yaml`:
-
-  ```bash
-  cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
-  ```
-
-- **just** ([installation](https://github.com/casey/just#installation)) — optional; read the `justfile` and run the commands yourself if you prefer
-
-`scripts/setup.sh --check` (that is `just doctor`) reports what is present and what is missing. A mismatch between the code generator, the Dart package and the Rust crate is a startup crash, which is why `just check` verifies all four places agree.
-
 ### Install and run
 
 ```bash
-just setup     # flutter pub get + cargo build --release
-just run       # build, then launch on macOS; use just run device=chrome for another target
+just setup 
+just run
 ```
 
 Without `just`, the same thing by hand:
@@ -163,8 +126,6 @@ flutter run -d macos
 | `just test-all` | all of the above |
 | `just versions` | print the flutter_rust_bridge version everywhere it appears |
 
-`just build` is not optional decoration: the generated Dart has `rust/target/release/` baked in as its load path, so a debug-only `cargo build` is invisible to it. When the library is missing, the app says so on screen instead of showing a blank window.
-
 ### Code generation
 
 After every change to `rust/src/api/**` the Dart bindings must be regenerated, or Dart keeps compiling against the old signature:
@@ -174,7 +135,7 @@ just gen          # equivalent to flutter_rust_bridge_codegen generate
 just gen-watch    # keep regenerating while you edit
 ```
 
-`rust/src/frb_generated.rs` and `lib/src/rust/**` are generated, and are **committed on purpose** so a change to the boundary shows up in review — but never edit them by hand: the next run overwrites them.
+`rust/src/frb_generated.rs` and `lib/src/rust/**` are generated。
 
 ### Quality checks and tests
 
@@ -190,23 +151,12 @@ The two test layers are separate for a reason: `just test` uses fakes to prove t
 
 ### Run the examples
 
-Three small apps, one idea each:
-
-```bash
-just build
-flutter run -t examples/hello_rust/main.dart  -d macos   # sync vs async
-flutter run -t examples/async_demo/main.dart  -d macos   # waiting without freezing
-flutter run -t examples/stream_demo/main.dart -d macos   # streams and cancellation
-```
-
 ## ➕ Adding an API function
 
 1. Write it in `rust/src/api/` (or a new module there) as a `pub fn`
 2. `just gen` — the Dart bindings appear under `lib/src/rust/api/`
 3. Call it from `lib/src/data/`, convert failures to `BridgeFailure`, and let the state layer own it
 4. `just test` for the fast loop, `just test-e2e` for the truth
-
-Functions are asynchronous on the Dart side unless marked `#[frb(sync)]`. That attribute runs the call on the calling isolate, so it only suits work that is cheap enough not to stutter the UI (formatting a string, reading a constant); file and network I/O, sleeping and lock waiting are all out. `docs/development.md` walks through a complete example, including how to test it.
 
 ## 📦 Release builds
 
