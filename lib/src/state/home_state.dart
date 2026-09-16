@@ -10,16 +10,17 @@ import '../rust/bridge.dart';
 
 /// 首页渲染所需的一切，以 GetX controller 的形式提供。
 ///
-/// 状态放在 `Rx` 值里而不是普通字段里。这样 widget 只在真正*读取*某个 `Rx` 的地方
-/// （也就是 `Obx` 内部）重建，而不是任何变化都让整页重建。比如在名字输入框里打字，
-/// 只会重建那个同步预览，别的什么都不动：倒数面板和 CPU 面板不会因此重跑。
+/// 状态放在 `Rx` 值里而不是普通字段里。这样 widget 只在真正*读取*某个 `Rx`
+/// 的地方（也就是 `Obx` 内部）重建，而不是任何变化都让整页重建。比如在名字输入
+/// 框里打字，只会重建那个同步预览：倒数面板和 CPU 面板不会因此重跑。
 ///
 /// 改动这个文件之前，有两点值得知道：
 ///
-/// * 直接赋值（`state.delayMs.value = 400`），不要写 setter；新值与旧值相等时 `Rx`
-///   会跳过通知，所以不需要手动加判断；
-/// * 生命周期钩子是 GetX 的，不是 `ChangeNotifier` 的：实例构建时跑 [onInit]，实例
-///   被删除时跑 [onClose]。这里没有一处调用 `notifyListeners`，也没有 `dispose`。
+/// * 直接赋值（`state.delayMs.value = 400`），不要写 setter；新值等于旧值时
+///   `Rx` 会跳过通知，所以不需要手动加判断；
+/// * 生命周期钩子是 GetX 的，不是 `ChangeNotifier` 的：实例构建时跑
+///   [onInit]，实例被删除时跑 [onClose]。这里没有一处调用
+///   `notifyListeners`，也没有 `dispose`。
 ///
 /// repository 要么通过构造函数传入（单元测试），要么从 Get 容器取得（由
 /// `HomeBinding` 注册）。
@@ -59,8 +60,8 @@ class HomeState extends GetxController {
   /// [summary] 为 `null` 时的原因。
   final RxnString summaryError = RxnString();
 
-  /// 读取宿主机信息。同步且廉价，所以在 [onInit] 里跑一次；首次构建时这些值就已经
-  /// 就绪。
+  /// 读取宿主机信息。同步且廉价，所以在 [onInit] 里跑一次；首次构建时这些值
+  /// 就已经就绪。
   void loadSummary() {
     try {
       summary.value = platform.summary(appId);
@@ -90,17 +91,17 @@ class HomeState extends GetxController {
 
   /// 同步往返，每次读取这个 getter 都会重新求值。
   ///
-  /// 这就是 `#[frb(sync)]` 换来的好处：没有 `Future` 要等，因为值已经在那里了。在
-  /// `Obx` 里读取它还会让那个 `Obx` 订阅 [name]，实时预览之所以能随输入更新，靠的
-  /// 就是这一点。
+  /// 这就是 `#[frb(sync)]` 换来的好处：没有 `Future` 要等，因为值已经在
+  /// 那里了。在 `Obx` 里读取它还会让那个 `Obx` 订阅 [name]，实时预览能随
+  /// 输入更新，靠的就是这一点。
   ///
   /// 这类 getter 要保持廉价：它们在 UI isolate 上、每次重建都会跑。
   String get instantHello => greetings.hello(name.value);
 
   /// 让 Rust 为当前输入校验并渲染一条 greeting。
   ///
-  /// 失败保存在 [greetingError] 里而不是抛出：UI 把它们显示在输入框旁边，而名字为空
-  /// 是预期内的失误，不是崩溃。
+  /// 失败保存在 [greetingError] 里而不是抛出：UI 把它们显示在输入框旁边；
+  /// 名字为空是预期内的失误，不是崩溃。
   Future<void> submitGreeting() async {
     if (isGreeting.value) return;
     isGreeting.value = true;
@@ -135,8 +136,8 @@ class HomeState extends GetxController {
 
   /// UI isolate 空闲期间持续递增的计数器。
   ///
-  /// 它是「慢速 Rust 调用不会阻塞 Flutter」的可见证据：如果 isolate 被阻塞，这些
-  /// 定时器回调就跑不起来，数字会停住。把它和请求的延迟对照着看。
+  /// 它是「慢速 Rust 调用不会阻塞 Flutter」的可见证据：如果 isolate 被阻塞，
+  /// 这些定时器回调就跑不起来，数字会停住。把它和请求的延迟对照着看。
   final RxInt busyTicks = 0.obs;
 
   Timer? _busyTicker;
@@ -186,8 +187,8 @@ class HomeState extends GetxController {
 
   /// 到目前为止收到的值，最早的在最前。
   ///
-  /// 它是 `RxList`，所以 `add` 自身就会发出通知。UI 侧请当作只读：什么时候清空由
-  /// controller 决定。
+  /// 它是 `RxList`，所以 `add` 自身就会发出通知。UI 侧请当作只读：什么时候
+  /// 清空由 controller 决定。
   final RxList<int> countdownValues = <int>[].obs;
 
   /// 倒数流是否仍然开着。
@@ -230,8 +231,8 @@ class HomeState extends GetxController {
 
   /// 取消订阅，Rust 侧的循环会在下一次发送时停下。
   ///
-  /// 值得把它接到一个看得见的按钮上：用同一条代码路径去处理「用户改主意了」，才能
-  /// 看出取消是否真的传到了 Rust。
+  /// 值得把它接到一个看得见的按钮上：用同一条代码路径去处理「用户改主意
+  /// 了」，才能看出取消是否真的传到了 Rust。
   Future<void> stopCountdown() async {
     final StreamSubscription<int>? subscription = _countdownSubscription;
     _countdownSubscription = null;
@@ -280,8 +281,8 @@ class HomeState extends GetxController {
 
   /// 实例构建时 GetX 会调用它。
   ///
-  /// 在这里（而不是在某个 widget 的 `initState` 里）读取宿主机信息，首次构建才能
-  /// 直接显示平台事实，同时也把这个副作用挡在 widget 树之外。
+  /// 在这里（而不是在某个 widget 的 `initState` 里）读取宿主机信息，首次构建
+  /// 才能直接显示平台事实，同时也把这个副作用挡在 widget 树之外。
   @override
   void onInit() {
     super.onInit();
@@ -296,8 +297,8 @@ class HomeState extends GetxController {
   void onClose() {
     _closed = true;
     _stopBusyTicker();
-    // `onClose` 是同步的，所以这个取消操作没法 await。Rust 会在下一次发送时察觉，
-    // 这正是可以放心地发出即忘的原因。
+    // `onClose` 是同步的，所以这个取消操作没法 await。Rust 会在下一次发送时
+    // 察觉，这正是可以放心地发出即忘的原因。
     unawaited(_countdownSubscription?.cancel());
     _countdownSubscription = null;
     super.onClose();

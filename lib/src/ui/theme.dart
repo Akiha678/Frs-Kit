@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 /// 所有界面颜色都由它派生而来的种子色。
 ///
-/// 改这一个值就能给整个应用换色，这是让脚手架看起来像*你自己的*应用的最省事办法。
+/// 改这一个值就能给整个应用换色，这是让脚手架看起来像*你自己的*应用的最省事
+/// 做法。
 const Color kSeedColor = Color(0xFF4F46E5); // 靛蓝
 
 /// 为 [brightness] 构建应用主题。
 ///
-/// Material 3 从 [kSeedColor] 派生整套配色；只显式设置脚手架通常会覆盖的那几项。
+/// Material 3 从 [kSeedColor] 派生整套配色；只显式设置脚手架通常会覆盖的
+/// 那几项。
 ThemeData frsKitTheme(Brightness brightness) {
   final ColorScheme scheme = ColorScheme.fromSeed(
     seedColor: kSeedColor,
@@ -39,7 +41,8 @@ ThemeData frsKitTheme(Brightness brightness) {
 
 /// 从 Rust 回显过来的值所用的文本样式。
 ///
-/// 值用等宽字体显示，这样 `BigInt` 或者不断变化的计数器在更新时不会让布局重新排布。
+/// 值用等宽字体显示，这样 `BigInt` 或者不断变化的计数器在更新时不会让布局
+/// 重新排布。
 const TextStyle kValueTextStyle = TextStyle(
   fontFamily: 'monospace',
   fontFeatures: <FontFeature>[FontFeature.tabularFigures()],

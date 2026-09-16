@@ -11,9 +11,10 @@ import 'failure.dart';
 /// * 把 bridge 异常转换成 [BridgeFailure]；
 /// * 把流的生命周期藏在普通的 `Stream` 后面。
 ///
-/// 生成类型（`rust.Greeting`、`rust.GreetingStyle`）被刻意当作应用的模型使用：
-/// 它们是不可变、按值相等的数据类，再手写一份拷贝只会多出一堆映射代码。如果哪天 UI
-/// 需要比 bridge 的改动活得更久，把映射加在*这里* —— 这一层就是干这个的。
+/// 生成类型（`rust.Greeting`、`rust.GreetingStyle`）被刻意当作应用的模型
+/// 使用：它们不可变、按值相等，再手写一份拷贝只会多出一堆映射代码。如果哪天
+/// UI 需要比 bridge 的改动活得更久，把映射加在*这里* —— 这就是这一层存在的
+/// 意义。
 ///
 /// bridge 的导入带前缀（`rust.`），这样 FFI 边界在每个调用点都看得见，下面那个
 /// `hello` 方法也就不会不小心递归进它自己包装的 `hello` 函数。
@@ -37,15 +38,15 @@ class GreetingRepository {
 
   /// 等 [delayMs] 毫秒之后再问候 [name]。
   ///
-  /// 等待发生在 Rust 的 worker 线程上，因此这个 future 挂起期间 Flutter UI 仍在持续
-  /// 绘制：这次调用不会让任何一帧卡顿。
+  /// 等待发生在 Rust 的 worker 线程上，因此这个 future 挂起期间 Flutter UI
+  /// 仍在持续绘制：这次调用不会让任何一帧卡顿。
   Future<String> delayedHello({required String name, required int delayMs}) =>
       _guard(() => rust.delayedHello(name: name, delayMs: delayMs));
 
   /// 第 [n] 个斐波那契数，在异步 runtime 之外计算。
   ///
-  /// 返回 [BigInt]，因为在 web 上 Rust 的 `u64` 装不进 Dart 定长的 `int` —— 那里的
-  /// 整数是 double。参见 `docs/architecture.md`。
+  /// 返回 [BigInt]，因为在 web 上 Rust 的 `u64` 装不进 Dart 定长的 `int`，
+  /// 那里的整数是 double。参见 `docs/architecture.md`。
   Future<BigInt> fibonacci(int n) => _guard(() => rust.fibonacci(n: n));
 
   /// 从 [count] 倒数到 `1`，每隔 [intervalMs] 产出一个值。

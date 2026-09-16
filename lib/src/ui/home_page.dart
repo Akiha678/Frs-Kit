@@ -11,8 +11,9 @@ import 'widgets/stream_card.dart';
 
 /// 首页：Dart 与 Rust 之间的每一次往返对应一个面板。
 ///
-/// 页面本身不持有状态，也不订阅任何东西。每个面板自己从 Get 容器取出 controller，
-/// 并用 `Obx` 包住会变化的部分，因此某个面板的状态变化不会重建另外三个。
+/// 页面本身不持有状态，也不订阅任何东西。每个面板自己从 Get 容器取出
+/// controller，并用 `Obx` 包住会变化的部分，因此某个面板的状态变化不会重建
+/// 另外三个。
 class HomePage extends StatelessWidget {
   /// 创建页面。
   const HomePage({super.key});
@@ -25,8 +26,8 @@ class HomePage extends StatelessWidget {
         actions: <Widget>[
           IconButton(
             tooltip: 'Re-read host facts from Rust',
-            // 不需要 `BuildContext`：controller 是通过容器拿到的，这也是这类回调
-            // 比用 InheritedWidget 时更短的原因。
+            // 不需要 `BuildContext`：controller 是通过容器拿到的，这也是这类
+            // 回调比用 InheritedWidget 时更短的原因。
             onPressed: () => Get.find<HomeState>().loadSummary(),
             icon: const Icon(Icons.refresh),
           ),
@@ -35,7 +36,7 @@ class HomePage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            // 行太长不好读，而手机宽度的栏位可以避免桌面窗口把面板拉得横跨全屏。
+            // 行太长不好读，而手机宽度的栏位可以避免桌面窗口把面板横向拉满。
             constraints: const BoxConstraints(maxWidth: 720),
             child: ListView(
               padding: const EdgeInsets.all(16),

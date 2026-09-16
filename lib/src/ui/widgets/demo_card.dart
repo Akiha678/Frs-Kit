@@ -14,6 +14,7 @@ class DemoCard extends StatelessWidget {
 
   final String title;
 
+  /// 一两句话说明 Rust 侧在做什么，显示在标题下方。
   final String explanation;
 
   /// 可选 widget，对齐到标题右侧，通常是一个状态 chip。

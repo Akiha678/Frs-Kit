@@ -7,9 +7,9 @@ import 'demo_card.dart';
 
 /// 往返之一：greeting 调用，两种形态并排展示。
 ///
-/// 把同步和异步调用并排展示是有意为之：同步的那个在名字变化时重新计算，异步的那个
-/// 只在按下按钮时执行。打字时看着两者分道扬镳，是体会 `#[frb(sync)]` 与 `Future`
-/// 之间差别的最清楚方式。
+/// 把同步和异步调用并排展示是有意为之：同步的那个在名字变化时重新计算，异步的
+/// 那个只在按下按钮时执行。打字时看着两者分道扬镳，是体会 `#[frb(sync)]` 与
+/// `Future` 之间差别的最清楚方式。
 ///
 /// 之所以是 Stateful，只因为那个输入框。它的 controller 必须比一次构建活得久 ——
 /// 在 `build` 里创建的 controller 会随着每次按键被重建，光标也会被重置到开头 ——
@@ -64,8 +64,8 @@ class _GreetingCardState extends State<GreetingCard> {
                 helperText:
                     'Up to 64 characters. Rust trims it before validating.',
               ),
-              // 直接写入 Rx 是 GetX 的习惯用法。值没变时 `RxString` 会跳过通知，
-              // 所以不需要 setter 里那种相等性判断。
+              // 直接写入 Rx 是 GetX 的习惯用法。值没变时 `RxString` 会跳过
+              // 通知，所以不需要 setter 里那种相等性判断。
               onChanged: (String value) => state.name.value = value,
             ),
             const SizedBox(height: 12),

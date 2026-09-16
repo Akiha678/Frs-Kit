@@ -7,9 +7,9 @@ import 'demo_card.dart';
 
 /// 往返之三：Rust 的 `StreamSink` 以 Dart `Stream` 的形式出现。
 ///
-/// 有意思的是 Start/Stop 这一对。停止并不是「把值藏起来」：它取消订阅，于是 Rust
-/// 下一次 `sink.add` 失败，worker 线程直接返回，而不是对着空气倒数。在倒数中途按
-/// Stop，就是检验取消是否真的落到实处的办法。
+/// 有意思的是 Start/Stop 这一对。停止并不是「把值藏起来」：它取消订阅，于是
+/// Rust 下一次 `sink.add` 失败，worker 线程直接返回，而不是对着空气倒数。在
+/// 倒数中途按 Stop，就是检验取消是否真的落到实处的办法。
 class StreamCard extends StatelessWidget {
   /// 创建面板。
   const StreamCard({super.key});
