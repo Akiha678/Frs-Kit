@@ -10,61 +10,58 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These functions are ignored because they are not marked as `pub`: `read`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `from`
 
-/// Operating system this native library was compiled for.
+/// 这个原生库编译时针对的操作系统。
 ///
-/// Unlike `Platform.operatingSystem` in Dart, this reports the target the *Rust*
-/// half was built for. The two agree in a correctly built app, and comparing them
-/// is a quick way to spot a stale native library.
+/// 与 Dart 的 `Platform.operatingSystem` 不同，它报告的是 *Rust* 那一半编译时
+/// 针对的目标。在构建正确的应用里两者一致，比较它们是发现原生库过期的最快方式。
 String platformName() => RustLib.instance.api.crateApiPlatformPlatformName();
 
-/// Coarse group [`platform_name`] belongs to.
+/// [`platform_name`] 所属的粗略分组。
 PlatformFamily platformFamily() =>
     RustLib.instance.api.crateApiPlatformPlatformFamily();
 
-/// Whether the app runs on Linux, macOS or Windows.
+/// 应用是否运行在 Linux、macOS 或 Windows 上。
 bool isDesktop() => RustLib.instance.api.crateApiPlatformIsDesktop();
 
-/// Best-effort application data directory for `app_id`.
+/// 为 `app_id` 尽力而为地给出应用数据目录。
 ///
-/// `None` means "this crate has no answer for the platform" — iOS and the web
-/// build, most notably. Prefer `path_provider` on the Dart side when the app needs
-/// a sandbox-correct, writable directory; this is a dependency-free hint.
+/// `None` 表示「本 crate 对该平台没有答案」—— 最典型的是 iOS 和 web 构建。应用
+/// 需要沙盒正确、可写的目录时，Dart 侧应优先用 `path_provider`；这里给的只是一
+/// 个无依赖的提示。
 String? defaultDataDir({required String appId}) =>
     RustLib.instance.api.crateApiPlatformDefaultDataDir(appId: appId);
 
-/// Reads the host once and returns everything at the same time.
+/// 读取一次宿主信息，同时返回全部内容。
 ///
-/// [`app_id`](Self::data_dir) is used to namespace the data directory, usually
-/// with the application id (`com.example.frs_kit`).
+/// [`app_id`](Self::data_dir) 用于给数据目录加命名空间，通常传应用 id
+/// （`com.example.frs_kit`）。
 PlatformSummary platformSummary({required String appId}) =>
     RustLib.instance.api.crateApiPlatformPlatformSummary(appId: appId);
 
-/// Coarse grouping of operating systems, mirroring
-/// [`rust_flutter_platform::PlatformFamily`].
+/// 操作系统的粗略分组，对应 [`rust_flutter_platform::PlatformFamily`]。
 enum PlatformFamily {
-  /// Linux, macOS and Windows.
+  /// Linux、macOS 与 Windows。
   desktop,
 
-  /// Android and iOS.
+  /// Android 与 iOS。
   mobile,
 
-  /// Anything else, including the web build and BSDs.
+  /// 其他一切，包括 web 构建和各类 BSD。
   other,
 }
 
-/// Everything the UI wants to know about the host, in one call.
+/// UI 想知道的宿主信息，一次调用全部取回。
 class PlatformSummary {
-  /// Operating system this native library was compiled for, e.g. `"macos"`.
+  /// 这个原生库编译时针对的操作系统，例如 `"macos"`。
   final String name;
 
-  /// Coarse group `name` belongs to.
+  /// `name` 所属的粗略分组。
   final PlatformFamily family;
 
-  /// Whether the app runs on a desktop OS.
+  /// 应用是否运行在桌面操作系统上。
   final bool isDesktop;
 
-  /// Best-effort per-user data directory, or `None` when this crate has no
-  /// answer for the platform.
+  /// 尽力而为的每用户数据目录；本 crate 对该平台没有答案时为 `None`。
   final String? dataDir;
 
   const PlatformSummary({

@@ -7,22 +7,23 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-/// Counts down from `count` to `1`, one value per `interval_ms`, then closes.
+// These functions are ignored because they are not marked as `pub`: `clamp_interval`
+
+/// 从 `count` 倒数到 `1`，每 `interval_ms` 发一个值，然后关闭。
 ///
-/// Dart signature: `Stream<int> countdown({required int count, required int
-/// intervalMs})`. Values above [`MAX_INTERVAL_MS`] are clamped, so a UI slider
-/// cannot make the stream crawl for minutes.
+/// Dart 签名：`Stream<int> countdown({required int count, required int
+/// intervalMs})`。超过 [`MAX_INTERVAL_MS`] 的值会被 clamp，所以 UI 滑块无法让
+/// 这个流慢到几分钟才发一次。
 ///
-/// Returning `Ok(())` closes the stream normally. To fail it instead, send
-/// `sink.add_error(...)` and still return `Ok(())`, or return `Err(...)` — either
-/// way Dart sees an error event rather than a silent stop.
+/// 返回 `Ok(())` 会正常关闭流。要让它失败，可以发 `sink.add_error(...)` 之后
+/// 仍然返回 `Ok(())`，或者直接返回 `Err(...)` —— 两种方式 Dart 看到的都是错误
+/// 事件，而不是静默停止。
 ///
-/// # Cancellation
+/// # 取消
 ///
-/// When Dart cancels the subscription (a disposed widget, a rebuilt `FutureBuilder`
-/// with a new key), the next `add` fails. Breaking out of the loop on that failure
-/// is what keeps a cancelled `Stream` from holding a worker thread until it would
-/// have finished on its own.
+/// 当 Dart 取消订阅（widget 被 dispose、带新 key 的 `FutureBuilder` 重建）后，
+/// 下一次 `add` 会失败。在这个失败上跳出循环，才能让已取消的 `Stream` 不再占着
+/// worker 线程直到它自己跑完。
 Stream<int> countdown({required int count, required int intervalMs}) => RustLib
     .instance
     .api

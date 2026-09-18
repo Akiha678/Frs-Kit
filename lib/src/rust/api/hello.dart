@@ -9,41 +9,40 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `from`, `from`, `from`
 
-/// The smallest possible bridge call.
+/// 尽可能最小的 bridge 调用。
 ///
-/// `#[frb(sync)]` makes this a plain synchronous `String` in Dart instead of a
-/// `Future<String>`: the call runs on the calling isolate, so it must stay cheap.
-/// A `format!` qualifies; a file read does not — see [`crate::api::async_demo`].
+/// `#[frb(sync)]` 让它在 Dart 里是普通的同步 `String` 而不是 `Future<String>`：
+/// 调用运行在当前 isolate 上，因此必须保持廉价。`format!` 够格；读文件不够 ——
+/// 见 [`crate::api::async_demo`]。
 String hello({required String name}) =>
     RustLib.instance.api.crateApiHelloHello(name: name);
 
-/// Validates `name` and renders it in `style`, asynchronously.
+/// 校验 `name` 并按 `style` 渲染，异步完成。
 ///
-/// Dart signature: `Future<Greeting> greet({required String name, required
-/// GreetingStyle style})`.
+/// Dart 签名：`Future<Greeting> greet({required String name, required
+/// GreetingStyle style})`。
 ///
-/// # Errors
+/// # 错误
 ///
-/// Surfaces [`rust_flutter_core::CoreError::InvalidInput`] to Dart as an
-/// `AnyhowException` when the name is blank or longer than
-/// [`rust_flutter_core::domain::MAX_RECIPIENT_LEN`] characters. The `?` below is
-/// the whole translation layer: `CoreError` implements `std::error::Error`, so
-/// `anyhow` picks it up with its `Display` message intact.
+/// 当名字为空、或长于 [`rust_flutter_core::domain::MAX_RECIPIENT_LEN`] 个字符
+/// 时，把 [`rust_flutter_core::CoreError::InvalidInput`] 作为
+/// `AnyhowException` 暴露给 Dart。下面的 `?` 就是整个转换层：`CoreError` 实现了
+/// `std::error::Error`，所以 `anyhow` 会连它的 `Display` 消息一起接住。
 Future<Greeting> greet({required String name, required GreetingStyle style}) =>
     RustLib.instance.api.crateApiHelloGreet(name: name, style: style);
 
-/// A greeting rendered by Rust and handed to Dart as a plain data class.
+/// 由 Rust 渲染好、以普通数据类交给 Dart 的问候语。
 ///
-/// Public fields, no invariants to preserve on the Dart side: the domain already
-/// validated the data, so `recipient` is trimmed and `message` matches `style`.
+/// 公开字段，Dart 侧没有不变量要维护：领域层已经校验过数据，所以 `recipient`
+/// 是 trim 过的，`message` 与 `style` 匹配。
 class Greeting {
-  /// The validated, trimmed name the greeting addresses.
+  /// 这条问候语称呼的、已校验并 trim 过的名字。
   final String recipient;
 
-  /// The rendered sentence.
+  /// 渲染出的句子。
   final String message;
 
-  /// The tone `message` was rendered in.
+  /// `message` 所用的语气。
   final GreetingStyle style;
 
   const Greeting({
@@ -65,15 +64,14 @@ class Greeting {
           style == other.style;
 }
 
-/// Tone used when composing a greeting.
+/// 组合问候语时使用的语气。
 ///
-/// Mirrors [`rust_flutter_core::domain::GreetingStyle`]; the `From` impls below
-/// keep the two in step.
+/// 对应 [`rust_flutter_core::domain::GreetingStyle`]；下面的 `From` 实现让两者
+/// 保持一致。
 ///
-/// Note what is *not* derived: `Default`. flutter_rust_bridge bridges every
-/// derivable trait it recognises as an extra Dart entry point, so a needless
-/// `#[derive(Default)]` here would add a `GreetingStyle.default_()` to the
-/// generated API that nothing calls.
+/// 注意 *没有* 派生什么：`Default`。flutter_rust_bridge 会把它识别出的每个可
+/// 派生 trait 都桥接成额外的 Dart 入口点，所以这里多余的 `#[derive(Default)]`
+/// 会在生成的 API 里加一个没人调用的 `GreetingStyle.default_()`。
 enum GreetingStyle {
   /// `Hello, Ada!`
   plain,

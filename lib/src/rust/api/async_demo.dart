@@ -7,33 +7,31 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `fibonacci_blocking`, `run_blocking`
+// These functions are ignored because they are not marked as `pub`: `clamp_delay`, `fibonacci_blocking`, `run_blocking`
 
-/// Greets `name` after waiting `delay_ms` milliseconds.
+/// 等待 `delay_ms` 毫秒后向 `name` 问好。
 ///
-/// Dart signature: `Future<String> delayedHello({required String name, required
-/// int delayMs})`. Values above [`MAX_DELAY_MS`] are clamped instead of rejected,
-/// which keeps a slider in the UI from turning into an error dialog.
+/// Dart 签名：`Future<String> delayedHello({required String name, required
+/// int delayMs})`。超过 [`MAX_DELAY_MS`] 的值会被 clamp 而不是拒绝，这样 UI 上
+/// 的滑块不会变成一个错误弹窗。
 ///
-/// # Errors
+/// # 错误
 ///
-/// Cannot fail today. The `Result` is part of the scaffold on purpose: replacing
-/// the sleep with a real network call will not change the Dart signature.
+/// 目前不会失败。这里的 `Result` 是有意保留在脚手架里的：把 sleep 换成真正的
+/// 网络调用不会改变 Dart 签名。
 Future<String> delayedHello({required String name, required int delayMs}) =>
     RustLib.instance.api.crateApiAsyncDemoDelayedHello(
       name: name,
       delayMs: delayMs,
     );
 
-/// The `n`-th Fibonacci number, with `F(0) = 0` and `F(1) = 1`.
+/// 第 `n` 个斐波那契数，其中 `F(0) = 0`、`F(1) = 1`。
 ///
-/// Stands in for any CPU-bound computation: the arithmetic runs on a blocking
-/// thread, so N calls in parallel use N threads of the pool instead of queueing
-/// behind each other on the async runtime.
+/// 代表任何 CPU 密集的计算：算术跑在 blocking 线程上，所以并行的 N 次调用会各
+/// 占 blocking pool 的一个线程，而不是在 async runtime 上互相排队。
 ///
-/// # Errors
+/// # 错误
 ///
-/// Returns an error for `n > `[`MAX_FIBONACCI_N`], where the result would not fit
-/// in a `u64`.
+/// 当 `n > MAX_FIBONACCI_N`、结果放不进 `u64` 时返回错误。
 Future<BigInt> fibonacci({required int n}) =>
     RustLib.instance.api.crateApiAsyncDemoFibonacci(n: n);
