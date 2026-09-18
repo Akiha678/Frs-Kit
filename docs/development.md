@@ -14,8 +14,8 @@ runtime uses:
 cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
 ```
 
-Optional: `fvm` (skipped automatically when absent) and `wasm-pack` for the web build;
-`scripts/setup.sh` reports all of them.
+Optional: `fvm` (skipped automatically when absent); `scripts/setup.sh` reports what is
+installed.
 
 ## First run
 
@@ -178,7 +178,6 @@ which one is behind. The generator never edits `pubspec.yaml` itself
 `macos`:
 
 ```sh
-just run device=chrome
 just run device=<device-id>     # see flutter devices
 ```
 
@@ -187,7 +186,7 @@ crate as part of the platform build and installs the Rust target through rustup 
 time. On iOS the platform panel reports `family other` and no data directory, because
 `rust/crates/platform/src/unsupported.rs` has no iOS module and refuses to guess a path.
 
-The web build needs something extra: `wasm-pack`, plus
-`flutter_rust_bridge_codegen build-web` to produce the wasm artifacts the loader looks
-for (its `webPrefix` is `pkg/`). Nothing in `justfile` wraps that, and it is unverified
-here.
+Web is not a supported target in this checkout: the `web/` platform directory was
+removed, so `flutter run -d chrome` has no entry point. The Rust crate still compiles for
+wasm and the generator still emits `frb_generated.web.dart`, but nothing here wires them
+together.

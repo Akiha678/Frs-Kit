@@ -25,7 +25,7 @@ Frs_Kit 是一个基于 **Flutter / Dart / Rust / flutter_rust_bridge** 的跨�
 
 它不是「hello world 外面套一层原生库」。整套脚手架围绕一个真实应用真正需要从 Rust 拿到的四件事来搭——**同步调用、异步调用、流、宿主信息**——每一件都实现了、都有两个层次的测试，并且在需要做取舍的地方写清了原因。目标是 **clone → `just setup` → `just run` → 填业务**。
 
-macOS 桌面端已实测跑通（含真机端到端测试）；Android、iOS、Windows、Linux 的原生工程与构建集成均已就位，Web 暂未接通。
+macOS 桌面端已实测跑通（含真机端到端测试）；Android、iOS、Windows、Linux 的原生工程与构建集成均已就位；Web 平台不支持（工程目录已移除）。
 
 > 如果这个脚手架对你有帮助，欢迎点个 Star ⭐
 

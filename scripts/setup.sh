@@ -55,7 +55,6 @@ echo
 echo "Optional"
 optional fvm "not needed: .fvmrc is only used when fvm is installed"
 optional just "you can run the commands in the justfile by hand" --version
-optional wasm-pack "only needed for the web build, which this scaffold does not wire up"
 
 if command -v rustup >/dev/null 2>&1; then
   echo

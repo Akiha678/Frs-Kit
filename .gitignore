@@ -72,14 +72,11 @@ app.*.map.json
 *.jks
 *.keystore
 
-# ---------------------------------------------------------- web 构建 ------
+# ---------------------------------------------------------- web ----------
 
-# `flutter_rust_bridge_codegen build-web` 的输出，生成器把它写到
-# `web/pkg/`（加载器的 `webPrefix`），再加上编译后的 `web/main.dart.js`。
-# 这个检出里还没有任何东西运行那一步——见 docs/troubleshooting.md——
-# 所以这些路径只有在 web 目标接好之后才会出现。无论如何它们都是生成的。
-/web/pkg/
-/web/main.dart.js
+# 整个 web 平台目录已移除：`flutter build web` 和 `flutter run -d chrome`
+# 不是本仓库支持的目标（见 README）。
+web
 
 # ------------------------------------------------- FVM (可选) -------------
 

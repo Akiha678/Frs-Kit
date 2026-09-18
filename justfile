@@ -13,7 +13,7 @@
 #     `rust/target/release/`，所以只做 debug 的 `cargo build` 对它不可见。
 #   * 每次改动 Rust 公开 API 之后都必须运行 `gen`，因为 Dart 绑定是生成的，
 #     而不是手写的。
-#   * `run` 和 `test-e2e` 需要指定设备：`just run device=chrome`。
+#   * `run` 和 `test-e2e` 需要指定设备（默认 `macos`），例如 `just run device=<id>`。
 #
 # `bash -uc` 表示 recipe 里未定义的变量或失败的命令会立即终止它，
 # 而不是让一个已经出错的步骤看起来像成功了一样。

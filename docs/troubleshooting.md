@@ -137,17 +137,17 @@ through `anyhow` into a `BridgeFailure`, which `HomeState` keeps in `greetingErr
 messages and the widget test asserts `tester.takeException()` is null, so an error on
 screen *and* a passing test is the designed outcome.
 
-## The web build cannot find `wasm-pack`
+## The web build is not supported
 
-**Symptom** — `scripts/setup.sh` prints `absent wasm-pack`, and the web build produces no
-wasm artifacts for the loader (`webPrefix` `pkg/`) to find.
+**Symptom** — `flutter run -d chrome` fails because there is no `web/` platform
+directory in this checkout.
 
-**Cause** — the web target needs a wasm build of the crate, and `wasm-pack` is what
-produces it. No `just` recipe wraps that step in this checkout.
+**Cause** — web support was dropped: `web/index.html`, `web/manifest.json` and the web
+icons were removed and the whole directory is gitignored, so the web target has no entry
+point. The Rust crate still compiles for wasm (see `unsupported.rs`), but nothing in this
+checkout wires it up.
 
-**Fix** — install `wasm-pack`, then run the generator's web build
-(`flutter_rust_bridge_codegen build-web`). The web path is not verified in this checkout:
-treat desktop and mobile as the supported targets.
+**Fix** — none: desktop and mobile are the supported targets.
 
 ## Android and iOS: the first build is slow, or fails before Dart is compiled
 
@@ -183,4 +183,4 @@ A missing required tool is the other half of that story: `scripts/setup.sh` prin
 `MISSING` and exits 1 when Flutter, `cargo`, `rustc` or `flutter_rust_bridge_codegen` is
 not on `PATH`. Install what it names; the generator must match the runtime version exactly
 (`cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked`). An *optional*
-tool (`fvm`, `just`, `wasm-pack`) is reported as `absent` and does not fail the script.
+tool (`fvm`, `just`) is reported as `absent` and does not fail the script.
